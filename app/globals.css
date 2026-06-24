@@ -11,7 +11,7 @@
     --card:               #FFFFFF;
     --card-foreground:    #0F172A;
     --muted-foreground:   #475569;
-    --primary:            #0284C7;
+    --primary:            #0891B2;
     --primary-foreground: #FFFFFF;
     --secondary:          #059669;
     --secondary-foreground: #FFFFFF;
@@ -19,21 +19,21 @@
     --accent-foreground:  #FFFFFF;
     --destructive:        #DC2626;
     --destructive-foreground: #FFFFFF;
-    --border:             #E0F0F8;
-    --input:              #E0F0F8;
-    --ring:               #0284C7;
+    --border:             #E2E8F0;
+    --input:              #E2E8F0;
+    --ring:               #0891B2;
     --radius:             0.5rem;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --background:       #082649;
-      --foreground:       #F0F9FF;
-      --card:             #0D3A57;
-      --card-foreground:  #F0F9FF;
-      --muted-foreground: #BEC7D1;
-      --border:           #164E77;
-      --input:            #164E77;
+      --background:       #0A1628;
+      --foreground:       #F1F5F9;
+      --card:             #0F2235;
+      --card-foreground:  #F1F5F9;
+      --muted-foreground: #94A3B8;
+      --border:           #1E3A5F;
+      --input:            #1E3A5F;
     }
   }
 
@@ -54,13 +54,11 @@
     color: var(--foreground);
   }
 
-  /* Focus ring — keyboard only, 2px offset */
   *:focus-visible {
     outline: none;
     box-shadow: 0 0 0 2px var(--background), 0 0 0 5px var(--ring);
   }
 
-  /* Reduced motion */
   @media (prefers-reduced-motion: reduce) {
     * {
       animation-duration: 0.01ms !important;
@@ -72,8 +70,6 @@
 
 @layer components {
 
-  /* ─── Buttons ─────────────────────────────────────── */
-
   .btn-primary {
     @apply inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg
            bg-primary-600 px-4 py-2 text-sm font-semibold text-white
@@ -83,7 +79,7 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    .btn-primary:hover { background-color: #0EA5E9; } /* primary-500 — lighter on dark bg */
+    .btn-primary:hover { background-color: #06B6D4; }
   }
 
   .btn-secondary {
@@ -109,7 +105,7 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    .btn-accent:hover { background-color: #22C55E; } /* secondary-500 */
+    .btn-accent:hover { background-color: #22C55E; }
   }
 
   .btn-destructive {
@@ -119,8 +115,6 @@
            hover:bg-error-700 active:scale-[0.98]
            disabled:pointer-events-none disabled:opacity-50 cursor-pointer;
   }
-
-  /* ─── Form elements ───────────────────────────────── */
 
   .form-label {
     @apply mb-1.5 block text-sm font-medium;
@@ -154,15 +148,13 @@
   .form-select:focus,
   .form-textarea:focus {
     outline: none;
-    border-color: #0284C7;
-    box-shadow: 0 0 0 1px var(--background), 0 0 0 3px #0284C7;
+    border-color: #0891B2;
+    box-shadow: 0 0 0 1px var(--background), 0 0 0 3px #0891B2;
   }
 
   .form-textarea {
     @apply min-h-[100px] resize-y;
   }
-
-  /* ─── Card ────────────────────────────────────────── */
 
   .card {
     @apply rounded-xl border transition-all duration-200;
@@ -173,7 +165,7 @@
   }
 
   .card:hover {
-    box-shadow: 0 6px 16px -4px rgb(2 132 199 / 0.10);
+    box-shadow: 0 6px 16px -4px rgb(8 145 178 / 0.10);
   }
 
   .card-header {
@@ -185,8 +177,6 @@
     @apply px-6 py-4;
   }
 
-  /* ─── Sidebar navigation ──────────────────────────── */
-
   .sidebar-link {
     @apply flex min-h-[44px] items-center gap-3 rounded-lg px-3 py-2
            text-sm font-medium transition-all duration-200 cursor-pointer
@@ -197,7 +187,7 @@
   @media (prefers-color-scheme: dark) {
     .sidebar-link:hover {
       @apply bg-primary-900;
-      color: #7DD3FC; /* primary-300 */
+      color: #67E8F9;
     }
   }
 
@@ -209,11 +199,9 @@
   @media (prefers-color-scheme: dark) {
     .sidebar-link-active {
       @apply bg-primary-900;
-      color: #7DD3FC;
+      color: #67E8F9;
     }
   }
-
-  /* ─── Status badges ───────────────────────────────── */
 
   .badge-pending {
     @apply inline-flex items-center gap-1.5 rounded-full
@@ -238,17 +226,13 @@
     .badge-error { @apply bg-error-900 text-error-300; }
   }
 
-  /* ─── Table ───────────────────────────────────────── */
-
   .table-row-hover {
     @apply transition-colors duration-100 hover:bg-primary-50;
   }
 
   @media (prefers-color-scheme: dark) {
-    .table-row-hover:hover { background-color: rgba(12, 61, 102, 0.4); }
+    .table-row-hover:hover { background-color: rgba(14, 116, 144, 0.15); }
   }
-
-  /* ─── Skeleton ────────────────────────────────────── */
 
   .skeleton {
     @apply animate-pulse rounded-lg bg-muted/20;

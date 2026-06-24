@@ -18,8 +18,8 @@ const config: Config = {
           foreground: 'var(--card-foreground)',
         },
         muted: {
-          DEFAULT: '#475569',                    // Kept as hex for bg-muted/N opacity support
-          foreground: 'var(--muted-foreground)', // CSS var for dark mode responsive text
+          DEFAULT: '#475569',
+          foreground: 'var(--muted-foreground)',
         },
         border: 'var(--border)',
         input: 'var(--input)',
@@ -29,19 +29,19 @@ const config: Config = {
           foreground: '#FFFFFF',
         },
 
-        // Primary: Medical Blue — full 50–900 scale
+        // Primary: Medical Teal — full 50–900 scale
         primary: {
-          50:  '#F0F9FF',
-          100: '#E0F2FE',
-          200: '#BAE6FD',
-          300: '#7DD3FC',
-          400: '#38BDF8',
-          500: '#0EA5E9',
-          600: '#0284C7',
-          700: '#0369A1',
-          800: '#075985',
-          900: '#0C3D66',
-          DEFAULT: '#0284C7',
+          50:  '#ECFEFF',
+          100: '#CFFAFE',
+          200: '#A5F3FC',
+          300: '#67E8F9',
+          400: '#22D3EE',
+          500: '#06B6D4',
+          600: '#0891B2',
+          700: '#0E7490',
+          800: '#155E75',
+          900: '#164E63',
+          DEFAULT: '#0891B2',
           foreground: '#FFFFFF',
         },
 
@@ -61,13 +61,11 @@ const config: Config = {
           foreground: '#FFFFFF',
         },
 
-        // Accent: Emerald alias
         accent: {
           DEFAULT: '#059669',
           foreground: '#FFFFFF',
         },
 
-        // Error — full 50–900 scale (P0 fix: was missing 200–500, 800–900)
         error: {
           50:  '#FEF2F2',
           100: '#FEE2E2',
@@ -83,7 +81,6 @@ const config: Config = {
           foreground: '#FFFFFF',
         },
 
-        // Warning — full 50–900 scale (P2 fix: was missing 200–500, 800–900)
         warning: {
           50:  '#FFFBEB',
           100: '#FEF3C7',
@@ -99,7 +96,6 @@ const config: Config = {
           foreground: '#FFFFFF',
         },
 
-        // Success
         success: {
           50:  '#F0FDF4',
           100: '#DCFCE7',
@@ -116,7 +112,7 @@ const config: Config = {
         },
 
         info: {
-          DEFAULT: '#0284C7',
+          DEFAULT: '#0891B2',
           foreground: '#FFFFFF',
         },
       },
@@ -166,7 +162,7 @@ const config: Config = {
         md:           '0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07)',
         lg:           '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
         card:         '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06)',
-        'card-hover': '0 6px 16px -4px rgb(2 132 199 / 0.12)',
+        'card-hover': '0 6px 16px -4px rgb(8 145 178 / 0.12)',
       },
     },
   },
