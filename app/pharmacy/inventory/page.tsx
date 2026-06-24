@@ -1,6 +1,6 @@
 'use client'
 import { MOCK_MEDICATIONS } from '@/lib/mock-data'
-import { Package } from 'lucide-react'
+// Package icon removed; no longer used after status badge refactor
 
 const MOCK_STOCK: Record<string, number> = {
   'med-001': 248, 'med-002': 512, 'med-003': 76, 'med-004': 35, 'med-005': 190, 'med-006': 320,
@@ -38,9 +38,9 @@ export default function PharmacyInventoryPage() {
                     <td className="px-6 py-4 capitalize text-muted-foreground">{med.form}</td>
                     <td className="px-6 py-4 font-mono text-xs text-muted-foreground">{med.ndc_code}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${low ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-                        {low && <Package className="h-3 w-3" />}
-                        {stock} units{low ? ' - Low Stock' : ''}
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${low ? 'bg-error-100 text-error-700' : 'bg-secondary-100 text-secondary-700'}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${low ? 'bg-error-500' : 'bg-secondary-500'}`} />
+                        {stock} units{low ? ' — Low stock' : ''}
                       </span>
                     </td>
                   </tr>

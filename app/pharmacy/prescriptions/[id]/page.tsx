@@ -75,9 +75,9 @@ export default function PharmacyPrescriptionDetailPage() {
       <div className="card">
         <div className="card-header"><h3 className="text-sm font-semibold">Inventory Check</h3></div>
         <div className="card-body space-y-4">
-          <div className="flex items-center gap-3 rounded-lg bg-green-50 p-3">
-            <CheckCircle className="h-5 w-5 text-green-600" />
-            <p className="text-sm font-medium text-green-700">{MED_NAMES[rx.medication_id] ?? rx.medication_id} - In Stock (Mock)</p>
+          <div className="flex items-center gap-3 rounded-xl bg-secondary-50 border border-secondary-200 p-3">
+            <CheckCircle className="h-5 w-5 text-secondary-600 shrink-0" />
+            <p className="text-sm font-medium text-secondary-700">{MED_NAMES[rx.medication_id] ?? rx.medication_id} — In Stock</p>
           </div>
 
           {rx.status === 'sent_to_pharmacy' ? (

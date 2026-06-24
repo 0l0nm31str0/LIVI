@@ -3,32 +3,41 @@ import type { PrescriptionStatus, OrderStatus } from '@/types'
 
 type Status = PrescriptionStatus | OrderStatus | 'scheduled' | 'completed' | 'cancelled'
 
-const statusConfig: Record<string, { label: string; classes: string }> = {
-  pending: { label: 'Pending', classes: 'bg-gray-100 text-gray-700' },
-  scheduled: { label: 'Scheduled', classes: 'bg-blue-100 text-blue-700' },
-  completed: { label: 'Completed', classes: 'bg-green-100 text-green-700' },
-  cancelled: { label: 'Cancelled', classes: 'bg-red-100 text-red-700' },
-  sent_to_pharmacy: { label: 'Sent to Pharmacy', classes: 'bg-blue-100 text-blue-700' },
-  pharmacy_confirmed: { label: 'Ready', classes: 'bg-teal-100 text-teal-700' },
-  ordered: { label: 'Ordered', classes: 'bg-indigo-100 text-indigo-700' },
-  fulfilled: { label: 'Fulfilled', classes: 'bg-green-100 text-green-700' },
-  pending_payment: { label: 'Pending Payment', classes: 'bg-yellow-100 text-yellow-700' },
-  payment_confirmed: { label: 'Payment Confirmed', classes: 'bg-blue-100 text-blue-700' },
-  preparing: { label: 'Preparing', classes: 'bg-amber-100 text-amber-700' },
-  shipped: { label: 'Shipped', classes: 'bg-indigo-100 text-indigo-700' },
-  delivered: { label: 'Delivered', classes: 'bg-green-100 text-green-700' },
+type BadgeConfig = { label: string; bg: string; text: string; dot: string }
+
+const statusConfig: Record<string, BadgeConfig> = {
+  pending:           { label: 'Pending',           bg: 'bg-warning-100',   text: 'text-warning-800',   dot: 'bg-warning-500' },
+  scheduled:         { label: 'Scheduled',         bg: 'bg-primary-100',   text: 'text-primary-700',   dot: 'bg-primary-500' },
+  completed:         { label: 'Completed',         bg: 'bg-secondary-100', text: 'text-secondary-700', dot: 'bg-secondary-500' },
+  cancelled:         { label: 'Cancelled',         bg: 'bg-error-100',     text: 'text-error-700',     dot: 'bg-error-500' },
+  sent_to_pharmacy:  { label: 'Sent to Pharmacy',  bg: 'bg-primary-100',   text: 'text-primary-700',   dot: 'bg-primary-400' },
+  pharmacy_confirmed:{ label: 'Ready',             bg: 'bg-secondary-100', text: 'text-secondary-700', dot: 'bg-secondary-500' },
+  ordered:           { label: 'Ordered',           bg: 'bg-primary-100',   text: 'text-primary-700',   dot: 'bg-primary-500' },
+  fulfilled:         { label: 'Fulfilled',         bg: 'bg-secondary-100', text: 'text-secondary-700', dot: 'bg-secondary-600' },
+  pending_payment:   { label: 'Pending Payment',   bg: 'bg-warning-100',   text: 'text-warning-700',   dot: 'bg-warning-500' },
+  payment_confirmed: { label: 'Paid',              bg: 'bg-secondary-100', text: 'text-secondary-700', dot: 'bg-secondary-500' },
+  preparing:         { label: 'Preparing',         bg: 'bg-warning-50',    text: 'text-warning-700',   dot: 'bg-warning-400' },
+  shipped:           { label: 'Shipped',           bg: 'bg-primary-50',    text: 'text-primary-700',   dot: 'bg-primary-400' },
+  delivered:         { label: 'Delivered',         bg: 'bg-secondary-100', text: 'text-secondary-700', dot: 'bg-secondary-600' },
 }
 
 export function StatusBadge({ status, className }: { status: Status; className?: string }) {
-  const config = statusConfig[status] ?? { label: status, classes: 'bg-gray-100 text-gray-700' }
+  const config = statusConfig[status] ?? {
+    label: status,
+    bg: 'bg-muted/10',
+    text: 'text-muted-foreground',
+    dot: 'bg-muted',
+  }
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-        config.classes,
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap',
+        config.bg,
+        config.text,
         className
       )}
     >
+      <span aria-hidden className={cn('h-1.5 w-1.5 shrink-0 rounded-full', config.dot)} />
       {config.label}
     </span>
   )

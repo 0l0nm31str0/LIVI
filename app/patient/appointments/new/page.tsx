@@ -47,7 +47,7 @@ export default function BookAppointmentPage() {
   if (success) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <div className="rounded-full bg-green-100 p-4 mb-4"><CheckCircle className="h-10 w-10 text-green-600" /></div>
+        <div className="rounded-full bg-secondary-100 p-4 mb-4"><CheckCircle className="h-10 w-10 text-secondary-600" /></div>
         <h2 className="text-xl font-bold text-foreground mb-1">Appointment booked!</h2>
         <p className="text-sm text-muted-foreground">Redirecting to your dashboard...</p>
       </div>
@@ -83,7 +83,8 @@ export default function BookAppointmentPage() {
           <div className="grid grid-cols-3 gap-2">
             {TIME_SLOTS.map(slot => (
               <button type="button" key={slot} onClick={() => setTime(slot)}
-                className={`rounded-md border py-2 text-sm font-medium transition-colors ${time === slot ? 'border-primary-700 bg-primary-700 text-white' : 'border-border bg-white text-foreground hover:bg-muted'}`}>
+                className={`rounded-lg border-2 py-2 text-sm font-medium transition-colors ${time === slot ? 'border-primary-600 bg-primary-600 text-white' : 'border-[color:var(--input)] bg-[color:var(--card)] hover:bg-primary-50 hover:border-primary-200'}`}
+                style={{ color: time === slot ? 'white' : 'var(--foreground)' }}>
                 {slot}
               </button>
             ))}

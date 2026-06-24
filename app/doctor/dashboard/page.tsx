@@ -37,8 +37,8 @@ export default function DoctorDashboard() {
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard title="Upcoming Appointments" value={upcoming.length} icon={Calendar} />
-        <StatCard title="Total Appointments" value={appointments.length} icon={Users} iconColor="text-accent" iconBg="bg-blue-50" />
-        <StatCard title="Pending Prescriptions" value={pendingRx.length} icon={FileText} iconColor="text-amber-600" iconBg="bg-amber-50" />
+        <StatCard title="Total Appointments" value={appointments.length} icon={Users} iconColor="text-secondary-600" iconBg="bg-secondary-50" />
+        <StatCard title="Pending Prescriptions" value={pendingRx.length} icon={FileText} iconColor="text-warning-700" iconBg="bg-warning-50" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

@@ -31,7 +31,8 @@ export default function BrowseDoctorsPage() {
             </div>
             <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{doc.bio}</p>
             <div className="flex items-center justify-between">
-              <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${doc.available ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${doc.available ? 'bg-secondary-100 text-secondary-700' : 'bg-muted/10 text-muted-foreground'}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${doc.available ? 'bg-secondary-500' : 'bg-muted'}`} />
                 {doc.available ? 'Available today' : 'Unavailable'}
               </span>
               <Link href="/patient/appointments/new" className="btn-primary text-xs px-3 py-1.5">

@@ -51,6 +51,7 @@ function WritePrescriptionForm() {
     setMedications([])
     setDosage(med.strength)
 
+    // Check allergy
     const history = MOCK_MEDICAL_HISTORY.find(h => h.patient_id === patientId)
     if (history) {
       const allergyWords = history.allergies.toLowerCase().split(/[\s,()]+/)
@@ -96,7 +97,7 @@ function WritePrescriptionForm() {
   if (success) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <div className="rounded-full bg-green-100 p-4 mb-4"><CheckCircle className="h-10 w-10 text-green-600" /></div>
+        <div className="rounded-full bg-secondary-100 p-4 mb-4"><CheckCircle className="h-10 w-10 text-secondary-600" /></div>
         <h2 className="text-xl font-bold text-foreground mb-1">Prescription sent!</h2>
         <p className="text-sm text-muted-foreground">Patient has been notified. Redirecting...</p>
       </div>
@@ -111,6 +112,7 @@ function WritePrescriptionForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="card p-6 space-y-5">
+        {/* Patient */}
         <div>
           <label className="form-label">Patient</label>
           <select className="form-select" value={patientId} onChange={e => setPatientId(e.target.value)}>
@@ -118,6 +120,7 @@ function WritePrescriptionForm() {
           </select>
         </div>
 
+        {/* Medication search */}
         <div className="relative">
           <label className="form-label">Medication</label>
           <input
@@ -128,7 +131,7 @@ function WritePrescriptionForm() {
             required
           />
           {medications.length > 0 && (
-            <div className="absolute z-10 mt-1 w-full rounded-md border border-border bg-white shadow-card-hover">
+            <div className="absolute z-10 mt-1 w-full rounded-xl border shadow-card-hover" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
               {medications.map(m => (
                 <button type="button" key={m.id} onClick={() => selectMed(m)}
                   className="flex w-full items-center justify-between px-4 py-2.5 text-sm hover:bg-primary-50 first:rounded-t-md last:rounded-b-md">

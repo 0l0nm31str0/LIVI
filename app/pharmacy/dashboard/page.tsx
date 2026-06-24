@@ -40,8 +40,8 @@ export default function PharmacyDashboard() {
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard title="Incoming Prescriptions" value={pending.length} icon={FileText} />
-        <StatCard title="Pending Orders" value={pendingOrders.length} icon={ShoppingBag} iconColor="text-amber-600" iconBg="bg-amber-50" />
-        <StatCard title="Fulfilled" value={fulfilledToday.length} icon={CheckCircle} iconColor="text-green-600" iconBg="bg-green-50" />
+        <StatCard title="Pending Orders" value={pendingOrders.length} icon={ShoppingBag} iconColor="text-warning-700" iconBg="bg-warning-50" />
+        <StatCard title="Fulfilled" value={fulfilledToday.length} icon={CheckCircle} iconColor="text-secondary-600" iconBg="bg-secondary-50" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

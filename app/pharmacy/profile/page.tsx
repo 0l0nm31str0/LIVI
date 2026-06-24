@@ -22,7 +22,7 @@ export default function PharmacyProfilePage() {
             <div><p className="text-xs text-muted-foreground">NPI Number</p><p className="font-mono text-xs font-medium">{pharmacy.npi_number}</p></div>
             <div><p className="text-xs text-muted-foreground">LegitScript ID</p><p className="font-mono text-xs font-medium">{pharmacy.legit_script_id}</p></div>
             <div><p className="text-xs text-muted-foreground">Manager</p><p className="font-medium">{user?.first_name} {user?.last_name}</p></div>
-            <div><p className="text-xs text-muted-foreground">Status</p><span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">{pharmacy.is_active ? 'Active' : 'Inactive'}</span></div>
+            <div><p className="text-xs text-muted-foreground">Status</p><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${pharmacy.is_active ? 'bg-secondary-100 text-secondary-700' : 'bg-muted/10 text-muted-foreground'}`}><span className={`h-1.5 w-1.5 rounded-full ${pharmacy.is_active ? 'bg-secondary-500' : 'bg-muted'}`} />{pharmacy.is_active ? 'Active' : 'Inactive'}</span></div>
           </div>
         </div>
       ) : (

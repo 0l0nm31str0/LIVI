@@ -28,18 +28,21 @@ export default function PatientDashboard() {
 
   return (
     <div>
+      {/* Welcome */}
       <div className="mb-6">
         <h2 className="text-2xl font-bold text-foreground">{greeting}, {user?.first_name}.</h2>
         <p className="mt-1 text-sm text-muted-foreground">Here&apos;s what&apos;s happening with your health today.</p>
       </div>
 
+      {/* Stats */}
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard title="Upcoming Appointments" value={upcoming.length} icon={Calendar} />
-        <StatCard title="Active Prescriptions" value={activePrescriptions.length} icon={FileText} iconColor="text-accent" iconBg="bg-blue-50" />
-        <StatCard title="Total Orders" value={orders.length} icon={ShoppingBag} iconColor="text-amber-600" iconBg="bg-amber-50" />
+        <StatCard title="Active Prescriptions" value={activePrescriptions.length} icon={FileText} iconColor="text-secondary-600" iconBg="bg-secondary-50" />
+        <StatCard title="Total Orders" value={orders.length} icon={ShoppingBag} iconColor="text-warning-700" iconBg="bg-warning-50" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Upcoming appointment */}
         <div className="card">
           <div className="card-header flex items-center justify-between">
             <h3 className="text-sm font-semibold text-foreground">Upcoming Appointment</h3>
@@ -54,8 +57,8 @@ export default function PatientDashboard() {
               upcoming.map(apt => (
                 <div key={apt.id} className="flex items-start justify-between gap-4">
                   <div className="flex gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50">
-                      <Calendar className="h-5 w-5 text-accent" />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-50">
+                      <Calendar className="h-5 w-5 text-primary-600" />
                     </div>
                     <div>
                       <p className="text-sm font-medium text-foreground">{formatDateTime(apt.appointment_date)}</p>
@@ -75,6 +78,7 @@ export default function PatientDashboard() {
           </div>
         </div>
 
+        {/* Recent prescriptions */}
         <div className="card">
           <div className="card-header flex items-center justify-between">
             <h3 className="text-sm font-semibold text-foreground">Prescriptions</h3>
@@ -100,6 +104,7 @@ export default function PatientDashboard() {
           </div>
         </div>
 
+        {/* Recent orders */}
         <div className="card lg:col-span-2">
           <div className="card-header flex items-center justify-between">
             <h3 className="text-sm font-semibold text-foreground">Recent Orders</h3>
@@ -140,6 +145,7 @@ export default function PatientDashboard() {
         </div>
       </div>
 
+      {/* Quick actions */}
       <div className="mt-6 flex flex-wrap gap-3">
         <Link href="/patient/appointments/new" className="btn-primary">
           <Calendar className="h-4 w-4" /> Book Appointment

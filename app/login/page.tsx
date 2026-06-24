@@ -6,6 +6,7 @@ import { Activity, Eye, EyeOff } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { getRoleDashboard } from '@/lib/auth'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
+import { AlertBanner } from '@/components/shared/AlertBanner'
 import type { AuthUser } from '@/types'
 
 const demoUsers = [
@@ -56,6 +57,7 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
+        {/* Logo */}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary-700">
             <Activity className="h-7 w-7 text-white" />
@@ -64,6 +66,7 @@ export default function LoginPage() {
           <p className="mt-1 text-sm text-muted-foreground">Sign in to your account</p>
         </div>
 
+        {/* Demo buttons */}
         <div className="mb-6 rounded-lg border border-border bg-primary-50 p-4">
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-primary-700">Quick demo access</p>
           <div className="flex flex-col gap-2">
@@ -80,6 +83,7 @@ export default function LoginPage() {
           </div>
         </div>
 
+        {/* Form */}
         <form onSubmit={handleLogin} className="card p-6">
           <div className="mb-4">
             <label className="form-label" htmlFor="email">Email</label>
@@ -119,9 +123,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <div className="mb-4 rounded-md border-l-4 border-destructive bg-red-50 p-3 text-sm text-destructive">
-              {error}
-            </div>
+            <AlertBanner variant="error" title={error} className="mb-4" />
           )}
 
           <button type="submit" disabled={loading} className="btn-primary w-full py-2.5">
