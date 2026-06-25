@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase'
-import { belugaPatients, belugaVisits, BelugaError } from '@/lib/beluga/client'
+import { belugaVisits, BelugaError } from '@/lib/beluga/client'
 import { ok, err } from '@/lib/api-response'
 
 // GET /api/visits?patient_id=xxx&status=active
@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(ok(data))
 }
 
-// POST /api/visits
+// POST /api/visits — creates Beluga visit (masterId flow) and saves to Supabase
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   if (!body) return NextResponse.json(err('Invalid JSON'), { status: 400 })
@@ -56,7 +56,6 @@ export async function POST(req: NextRequest) {
 
   const db = getServerSupabase()
 
-  // Upsert patient profile
   await db.from('patient_profiles').upsert(
     {
       livi_user_id: patient_id,
@@ -74,82 +73,63 @@ export async function POST(req: NextRequest) {
     { onConflict: 'livi_user_id' }
   )
 
-  // Get or create Beluga patient
-  let belugaPatientId: string | null = null
-  try {
-    const { data: existing } = await db
-      .from('patient_profiles')
-      .select('beluga_patient_id')
-      .eq('livi_user_id', patient_id)
-      .single()
+  let belugaMasterId: string | null = null
+  let belugaVisitId: string | null = null
+  let belugaError: string | null = null
 
-    if (existing?.beluga_patient_id) {
-      belugaPatientId = existing.beluga_patient_id
-    } else {
-      const belugaPt = await belugaPatients.create({
-        external_id: patient_id,
-        email: patient_email,
-        first_name: profile.first_name,
-        last_name: profile.last_name,
-        date_of_birth: profile.date_of_birth,
-        phone: profile.phone,
-        gender: profile.gender,
-        address: {
-          line1: profile.address_line1,
-          city: profile.city,
-          state: profile.state,
-          zip: profile.zip,
-        },
-      })
-      belugaPatientId = belugaPt.id
-      await db
-        .from('patient_profiles')
-        .update({ beluga_patient_id: belugaPatientId })
-        .eq('livi_user_id', patient_id)
-    }
+  try {
+    const result = await belugaVisits.create({
+      patient_email,
+      chief_complaint,
+      questionnaire,
+      profile,
+      visitType: mapVisitType(visit_type, questionnaire),
+    })
+    belugaMasterId = result.masterId
+    belugaVisitId = result.visitId
   } catch (e) {
     if (e instanceof BelugaError) {
-      console.error('Beluga patient error:', e.message)
+      belugaError = e.message
+      console.error('Beluga visit creation error:', e.message)
     } else {
-      console.error('Unexpected error creating Beluga patient:', e)
+      belugaError = e instanceof Error ? e.message : String(e)
+      console.error('Unexpected Beluga error:', e)
     }
   }
 
-  // Create Beluga visit
-  let belugaVisitId: string | null = null
-  let zoomLink: string | null = null
-
-  if (belugaPatientId) {
-    try {
-      const bv = await belugaVisits.create({
-        patient_id: belugaPatientId,
-        visit_type,
-        questionnaire: { chief_complaint, ...questionnaire },
-      })
-      belugaVisitId = bv.id
-      zoomLink = bv.zoom_link
-    } catch (e) {
-      console.error('Beluga visit creation error:', e)
-    }
-  }
-
-  // Save visit to Supabase
   const { data: visit, error: dbErr } = await db
     .from('visits')
     .insert({
       patient_id,
       patient_email,
+      beluga_master_id: belugaMasterId,
       beluga_visit_id: belugaVisitId,
-      beluga_patient_id: belugaPatientId,
-      status: belugaVisitId ? 'submitted' : 'draft',
+      status: belugaMasterId ? 'submitted' : 'draft',
       visit_type,
       chief_complaint,
       questionnaire,
-      zoom_link: zoomLink,
     })
     .select()
     .single()
 
   if (dbErr) return NextResponse.json(err(dbErr.message), { status: 500 })
+
+  if (belugaError && !belugaMasterId) {
+    return NextResponse.json(
+      err(`Visit saved locally but Beluga submission failed: ${belugaError}`),
+      { status: 502 }
+    )
+  }
+
   return NextResponse.json(ok(visit), { status: 201 })
+}
+
+function mapVisitType(visitType: string, questionnaire: Record<string, unknown>): string {
+  const fromEnv = process.env.BELUGA_VISIT_TYPE
+  if (fromEnv) return fromEnv
+  const vertical = String(questionnaire.vertical ?? questionnaire.visit_type ?? '').toLowerCase()
+  if (vertical.includes('weight')) return 'weightloss'
+  if (vertical.includes('ed')) return 'ED'
+  if (vertical.includes('hair')) return 'hairloss'
+  return visitType === 'sync' ? 'weightloss' : 'weightloss'
 }

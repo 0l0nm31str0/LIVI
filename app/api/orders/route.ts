@@ -30,11 +30,9 @@ export async function GET(req: NextRequest) {
             await db.from('visits').update({
               curexa_order_status: status.status,
               tracking_number: status.tracking_number,
-              tracking_url: status.tracking_url,
               carrier: status.carrier,
-              estimated_delivery: status.estimated_delivery,
             }).eq('id', v.id)
-            return { ...v, ...status }
+            return { ...v, curexa_order_status: status.status, tracking_number: status.tracking_number, carrier: status.carrier }
           }
         } catch {
           // Non-fatal: return cached data

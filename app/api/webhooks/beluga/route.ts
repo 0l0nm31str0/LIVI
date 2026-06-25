@@ -1,95 +1,147 @@
 // Beluga Health → LIVI webhook handler
-//
-// Events handled:
-//   RX_WRITTEN        → create Curexa order, update visit to 'prescribed'
-//   CONSULT_CONCLUDED → update visit status to 'active'
-//   CONSULT_CANCELED  → update visit status to 'cancelled'
-//   DOCTOR_CHAT       → save message to visit_messages
-//   CS_MESSAGE        → save message to visit_messages
+// Payload format: { masterId, event, ...fields } per Beluga webhook documentation
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase'
 import { verifyBelugaWebhook } from '@/lib/beluga/client'
 import { curexaOrders, CurexaCreateOrderInput } from '@/lib/curexa/client'
 
+interface BelugaWebhookPayload {
+  masterId?: string
+  event?: string
+  visitOutcome?: string
+  docName?: string
+  medsPrescribed?: Array<Record<string, unknown>>
+  content?: string
+  orderId?: string
+  info?: Record<string, unknown>
+  [key: string]: unknown
+}
+
 export async function POST(req: NextRequest) {
   const rawBody = await req.text()
-  const sig = req.headers.get('x-beluga-signature') ?? ''
+  const sig =
+    req.headers.get('x-beluga-signature') ??
+    req.headers.get('x-hub-signature-256') ??
+    req.headers.get('authorization') ??
+    ''
 
   if (!verifyBelugaWebhook(rawBody, sig)) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
   }
 
-  let event: { type: string; data: Record<string, unknown> }
+  let payload: BelugaWebhookPayload
   try {
-    event = JSON.parse(rawBody)
+    payload = JSON.parse(rawBody) as BelugaWebhookPayload
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
   }
 
-  const db = getServerSupabase()
+  const eventType = payload.event
+  if (!eventType) {
+    return NextResponse.json({ error: 'Missing event field' }, { status: 400 })
+  }
 
-  // Log event and capture the row id for later update
+  const db = getServerSupabase()
   const { data: logRow } = await db
     .from('webhook_events')
-    .insert({ source: 'beluga', event_type: event.type, payload: event.data })
+    .insert({ source: 'beluga', event_type: eventType, payload })
     .select('id')
     .single()
 
   const logId: string | null = logRow?.id ?? null
 
   try {
-    switch (event.type) {
+    switch (eventType) {
       case 'RX_WRITTEN':
-        await handleRxWritten(db, event.data)
+        await handleRxWritten(db, payload)
         break
-
       case 'CONSULT_CONCLUDED':
-        await db
-          .from('visits')
-          .update({ status: 'active', updated_at: new Date().toISOString() })
-          .eq('beluga_visit_id', event.data.visit_id as string)
+        await updateVisitByMasterId(db, payload.masterId, {
+          status: payload.visitOutcome === 'prescribed' ? 'prescribed' : 'active',
+        })
         break
-
       case 'CONSULT_CANCELED':
-        await db
-          .from('visits')
-          .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-          .eq('beluga_visit_id', event.data.visit_id as string)
+        await updateVisitByMasterId(db, payload.masterId, { status: 'cancelled' })
         break
-
       case 'DOCTOR_CHAT':
+        await handleIncomingMessage(db, payload, 'doctor')
+        break
       case 'CS_MESSAGE':
-        await handleIncomingMessage(db, event.data, event.type)
+        await handleIncomingMessage(db, payload, 'system')
+        break
+      case 'PHARMACY_ORDER_IN_FULFILLMENT':
+        await updateVisitByMasterId(db, payload.masterId, { curexa_order_status: 'in_progress' })
+        break
+      case 'PHARMACY_ORDER_SHIPPED':
+        await updateVisitByMasterId(db, payload.masterId, {
+          status: 'shipped',
+          curexa_order_status: 'shipped',
+          tracking_number: payload.info?.tracking as string | undefined ?? null,
+          carrier: payload.info?.carrier as string | undefined ?? null,
+        })
+        break
+      case 'PHARMACY_ORDER_DELIVERED':
+        await updateVisitByMasterId(db, payload.masterId, {
+          status: 'delivered',
+          curexa_order_status: 'completed',
+        })
         break
     }
 
     if (logId) await db.from('webhook_events').update({ processed: true }).eq('id', logId)
   } catch (e) {
     const errMsg = e instanceof Error ? e.message : String(e)
-    console.error(`Beluga webhook error [${event.type}]:`, errMsg)
+    console.error(`Beluga webhook error [${eventType}]:`, errMsg)
     if (logId) await db.from('webhook_events').update({ error: errMsg }).eq('id', logId)
   }
 
   return NextResponse.json({ received: true })
 }
 
+async function updateVisitByMasterId(
+  db: ReturnType<typeof import('@/lib/supabase').getServerSupabase>,
+  masterId: string | undefined,
+  fields: Record<string, unknown>
+) {
+  if (!masterId) return
+  await db
+    .from('visits')
+    .update({ ...fields, updated_at: new Date().toISOString() })
+    .eq('beluga_master_id', masterId)
+}
+
+async function findVisitByMasterId(
+  db: ReturnType<typeof import('@/lib/supabase').getServerSupabase>,
+  masterId: string | undefined
+) {
+  if (!masterId) return null
+  const { data } = await db.from('visits').select('*').eq('beluga_master_id', masterId).single()
+  return data
+}
+
 async function handleRxWritten(
   db: ReturnType<typeof import('@/lib/supabase').getServerSupabase>,
-  data: Record<string, unknown>
+  payload: BelugaWebhookPayload
 ) {
-  const belugaVisitId = data.visit_id as string
-  const rx = data.prescription as Record<string, unknown>
-
-  const { data: visit } = await db
-    .from('visits')
-    .select('*')
-    .eq('beluga_visit_id', belugaVisitId)
-    .single()
-
+  const masterId = payload.masterId
+  const visit = await findVisitByMasterId(db, masterId)
   if (!visit) {
-    console.error('[RX_WRITTEN] Visit not found for beluga_visit_id:', belugaVisitId)
+    console.error('[RX_WRITTEN] Visit not found for masterId:', masterId)
     return
+  }
+
+  const meds = payload.medsPrescribed ?? []
+  const primary = meds[0] ?? {}
+  const rx = {
+    medication_name: primary.name as string,
+    strength: primary.strength as string,
+    quantity: Number(primary.quantity ?? 30),
+    refills: Number(primary.refills ?? 0),
+    medId: primary.medId as string,
+    rxId: primary.rxId as string,
+    docName: payload.docName,
+    medsPrescribed: meds,
   }
 
   const { data: patient } = await db
@@ -99,44 +151,43 @@ async function handleRxWritten(
     .single()
 
   if (!patient) {
-    console.error('[RX_WRITTEN] Patient profile not found for:', visit.patient_id)
-    await db
-      .from('visits')
-      .update({ status: 'prescribed', rx_written: true, prescription_data: rx })
-      .eq('id', visit.id)
+    await db.from('visits').update({
+      status: 'prescribed',
+      rx_written: true,
+      prescription_data: rx,
+      updated_at: new Date().toISOString(),
+    }).eq('id', visit.id)
     return
   }
 
-  // patient_id MUST be the patient's email for eScript cross-matching with Curexa
+  const docParts = String(payload.docName ?? '').split(' ')
+  const prescriberFirst = docParts[0] ?? 'Doctor'
+  const prescriberLast = docParts.slice(1).join(' ') || 'Beluga'
+
   const curexaPayload: CurexaCreateOrderInput = {
     patient_id: patient.email,
     patient_first_name: patient.first_name,
     patient_last_name: patient.last_name,
-    patient_dob: formatDob(patient.date_of_birth),
+    patient_dob: patient.date_of_birth ?? '',
     patient_email: patient.email,
     patient_phone: patient.phone ?? '',
     patient_address: patient.address_line1 ?? '',
     patient_city: patient.city ?? '',
     patient_state: patient.state ?? '',
     patient_zip: patient.zip ?? '',
-    patient_gender: mapGender(patient.gender),
+    patient_gender: patient.gender ?? 'U',
+    patient_known_allergies: String(visit.questionnaire?.allergies ?? 'None'),
+    patient_other_medications: String(visit.questionnaire?.current_medications ?? 'None'),
 
-    medication_name: rx.medication_name as string,
-    medication_ndc: rx.ndc_code as string | undefined,
-    dosage: rx.dosage as string,
-    quantity: rx.quantity as number,
-    refills: rx.refills as number,
-    days_supply: (rx.days_supply as number) ?? 30,
-    special_instructions: rx.special_instructions as string | undefined,
+    medication_name: String(primary.name ?? 'Prescription'),
+    dosage: String(primary.strength ?? ''),
+    quantity: Number(primary.quantity ?? 30),
+    refills: Number(primary.refills ?? 0),
+    days_supply: 30,
 
-    prescriber_first_name: (data.doctor_first_name as string) ?? '',
-    prescriber_last_name: (data.doctor_last_name as string) ?? '',
-    prescriber_npi: (data.doctor_npi as string) ?? process.env.PRESCRIBER_NPI ?? '',
-    prescriber_address: process.env.PRESCRIBER_ADDRESS ?? '',
-    prescriber_city: process.env.PRESCRIBER_CITY ?? '',
-    prescriber_state: process.env.PRESCRIBER_STATE ?? '',
-    prescriber_zip: process.env.PRESCRIBER_ZIP ?? '',
-    prescriber_phone: process.env.PRESCRIBER_PHONE ?? '',
+    prescriber_first_name: prescriberFirst,
+    prescriber_last_name: prescriberLast,
+    prescriber_npi: process.env.PRESCRIBER_NPI ?? '',
 
     shipping_address: patient.address_line1 ?? '',
     shipping_city: patient.city ?? '',
@@ -144,7 +195,7 @@ async function handleRxWritten(
     shipping_zip: patient.zip ?? '',
 
     livi_visit_id: visit.id,
-    livi_rx_id: rx.id as string,
+    livi_rx_id: String(primary.rxId ?? primary.medId ?? ''),
   }
 
   let curexaOrderId: string | null = null
@@ -153,7 +204,7 @@ async function handleRxWritten(
   try {
     const order = await curexaOrders.create(curexaPayload)
     curexaOrderId = order.order_id
-    curexaStatus = order.status ?? 'new'
+    curexaStatus = 'new'
     console.log('[RX_WRITTEN] Curexa order created:', curexaOrderId)
   } catch (e) {
     console.error('[RX_WRITTEN] Failed to create Curexa order:', e)
@@ -171,43 +222,17 @@ async function handleRxWritten(
 
 async function handleIncomingMessage(
   db: ReturnType<typeof import('@/lib/supabase').getServerSupabase>,
-  data: Record<string, unknown>,
-  eventType: string
+  payload: BelugaWebhookPayload,
+  kind: 'doctor' | 'system'
 ) {
-  const belugaVisitId = data.visit_id as string
-  const { data: visit } = await db
-    .from('visits')
-    .select('id')
-    .eq('beluga_visit_id', belugaVisitId)
-    .single()
+  const visit = await findVisitByMasterId(db, payload.masterId)
+  if (!visit || !payload.content) return
 
-  if (!visit) return
-
-  const isDoctor = eventType === 'DOCTOR_CHAT'
   await db.from('visit_messages').insert({
     visit_id: visit.id,
-    sender_id: (data.sender_id as string) ?? null,
-    sender_name: isDoctor ? ((data.doctor_name as string) ?? 'Doctor') : 'LIVI Support',
-    sender_type: isDoctor ? 'doctor' : 'system',
-    message: data.message as string,
+    sender_name: kind === 'doctor' ? (payload.docName ?? 'Doctor') : 'LIVI Support',
+    sender_type: kind === 'doctor' ? 'doctor' : 'system',
+    message: payload.content,
     source: 'beluga',
-    external_id: (data.message_id as string) ?? null,
-    created_at: (data.created_at as string) ?? new Date().toISOString(),
   })
-}
-
-function formatDob(dob: string | null): string {
-  if (!dob) return ''
-  // Convert YYYY-MM-DD to MM/DD/YYYY for Curexa
-  const parts = dob.split('-')
-  if (parts.length === 3) return `${parts[1]}/${parts[2]}/${parts[0]}`
-  return dob
-}
-
-function mapGender(g: string | null): string {
-  if (!g) return 'U'
-  const lower = g.toLowerCase()
-  if (lower === 'male' || lower === 'm') return 'M'
-  if (lower === 'female' || lower === 'f') return 'F'
-  return 'U'
 }

@@ -1,12 +1,11 @@
 // Prescription API route
-// POST: Writes a prescription through Beluga Health.
-//       The RX_WRITTEN webhook then triggers a Curexa order automatically.
+// POST: Resend/update prescription via Beluga /external/updateVisit
+//       RX_WRITTEN webhook then triggers Curexa order automatically.
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase'
 import { belugaRx, BelugaError } from '@/lib/beluga/client'
 import { ok, err } from '@/lib/api-response'
 
-// GET /api/prescriptions?patient_id=... or ?doctor_id=...
 export async function GET(req: NextRequest) {
   const patientId = req.nextUrl.searchParams.get('patient_id')
 
@@ -23,13 +22,12 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(ok(data))
 }
 
-// POST /api/prescriptions
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   if (!body) return NextResponse.json(err('Invalid body'), { status: 400 })
 
   const {
-    beluga_visit_id,
+    beluga_master_id,
     livi_visit_id,
     medication_name,
     ndc_code,
@@ -37,40 +35,48 @@ export async function POST(req: NextRequest) {
     quantity,
     refills,
     days_supply,
-    special_instructions,
+    med_id,
   } = body as {
-    beluga_visit_id: string
-    livi_visit_id: string
+    beluga_master_id: string
+    livi_visit_id?: string
     medication_name: string
     ndc_code?: string
     dosage: string
     quantity: number
     refills: number
     days_supply: number
-    special_instructions?: string
+    med_id?: string
   }
 
-  if (!beluga_visit_id || !medication_name || !dosage) {
-    return NextResponse.json(err('beluga_visit_id, medication_name, and dosage are required'), { status: 400 })
+  if (!beluga_master_id || !medication_name || !dosage) {
+    return NextResponse.json(err('beluga_master_id, medication_name, and dosage are required'), { status: 400 })
   }
 
   try {
-    const rx = await belugaRx.write(beluga_visit_id, {
-      medication_name,
-      ndc_code,
-      dosage,
-      quantity,
-      refills,
-      days_supply: days_supply ?? 30,
-      special_instructions,
+    const rx = await belugaRx.updateVisit({
+      masterId: beluga_master_id,
+      patientPreference: [
+        {
+          name: medication_name,
+          strength: dosage,
+          quantity: String(quantity),
+          refills: String(refills),
+          daysSupply: String(days_supply ?? 30),
+          medId: med_id ?? ndc_code ?? process.env.BELUGA_DEFAULT_MED_ID ?? 'N/A',
+        },
+      ],
     })
 
-    // Optimistically update the LIVI visit; RX_WRITTEN webhook will confirm
     if (livi_visit_id) {
       const db = getServerSupabase()
       await db
         .from('visits')
-        .update({ rx_written: true, prescription_data: rx, status: 'prescribed' })
+        .update({
+          rx_written: true,
+          prescription_data: rx,
+          status: 'prescribed',
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', livi_visit_id)
     }
 

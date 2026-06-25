@@ -232,6 +232,7 @@ export interface Visit {
   id: string
   patient_id: string
   patient_email: string
+  beluga_master_id: string | null
   beluga_visit_id: string | null
   beluga_patient_id: string | null
   status: VisitStatus

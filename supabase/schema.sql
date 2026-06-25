@@ -34,7 +34,8 @@ CREATE TABLE IF NOT EXISTS visits (
   id                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   patient_id            TEXT NOT NULL,           -- LIVI user ID
   patient_email         TEXT NOT NULL,
-  beluga_visit_id       TEXT UNIQUE,             -- Beluga visit ID
+  beluga_visit_id       TEXT,             -- Beluga internal visitId (for photos)
+  beluga_master_id      TEXT UNIQUE,      -- LIVI masterId sent to Beluga (webhook lookup key)
   beluga_patient_id     TEXT,                   -- Beluga patient ID
   status                TEXT NOT NULL DEFAULT 'draft',
   -- draft | submitted | under_review | active | prescribed | shipped | delivered | cancelled
@@ -85,6 +86,7 @@ CREATE TABLE IF NOT EXISTS webhook_events (
 
 -- ─── Indexes ─────────────────────────────────────────────────────────────────
 CREATE INDEX IF NOT EXISTS visits_patient_id_idx      ON visits(patient_id);
+CREATE INDEX IF NOT EXISTS visits_beluga_master_id_idx ON visits(beluga_master_id);
 CREATE INDEX IF NOT EXISTS visits_beluga_visit_id_idx ON visits(beluga_visit_id);
 CREATE INDEX IF NOT EXISTS visits_curexa_order_id_idx ON visits(curexa_order_id);
 CREATE INDEX IF NOT EXISTS visit_messages_visit_idx   ON visit_messages(visit_id);

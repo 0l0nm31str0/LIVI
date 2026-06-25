@@ -84,8 +84,8 @@ function WritePrescriptionForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!user || !selectedMed) return
-    const targetVisitId = visitId || selectedVisit?.beluga_visit_id
-    if (!targetVisitId) {
+    const targetMasterId = selectedVisit?.beluga_master_id ?? visitId
+    if (!targetMasterId) {
       setError('Please select a visit first.')
       return
     }
@@ -96,7 +96,7 @@ function WritePrescriptionForm() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        beluga_visit_id: selectedVisit?.beluga_visit_id ?? visitId,
+        beluga_master_id: selectedVisit?.beluga_master_id ?? visitId,
         livi_visit_id: selectedVisit?.id ?? '',
         doctor_id: user.id,
         medication_name: selectedMed.name,
@@ -151,7 +151,7 @@ function WritePrescriptionForm() {
                 <button
                   key={v.id}
                   type="button"
-                  onClick={() => { setSelectedVisit(v); setVisitId(v.beluga_visit_id ?? '') }}
+                  onClick={() => { setSelectedVisit(v); setVisitId(v.beluga_master_id ?? '') }}
                   className={`w-full text-left rounded-xl border-2 p-4 transition-colors ${
                     selectedVisit?.id === v.id
                       ? 'border-primary-600 bg-primary-50'
@@ -165,9 +165,9 @@ function WritePrescriptionForm() {
                   <p className="text-xs text-muted-foreground mt-1">
                     {v.patient_email} · {formatRelative(v.created_at)}
                   </p>
-                  {v.questionnaire?.allergies && (
+                  {v.questionnaire?.allergies ? (
                     <p className="text-xs text-warning-700 mt-1">⚠️ Allergies: {String(v.questionnaire.allergies)}</p>
-                  )}
+                  ) : null}
                 </button>
               ))}
             </div>
@@ -175,10 +175,10 @@ function WritePrescriptionForm() {
 
           {/* Manual visit ID override */}
           <div className="mt-3">
-            <label className="form-label text-xs text-muted-foreground">Or enter Beluga Visit ID manually</label>
+            <label className="form-label text-xs text-muted-foreground">Or enter Beluga Master ID manually</label>
             <input
               className="form-input text-sm"
-              placeholder="bvst_..."
+              placeholder="master-id-uuid"
               value={visitId}
               onChange={e => { setVisitId(e.target.value); setSelectedVisit(null) }}
             />

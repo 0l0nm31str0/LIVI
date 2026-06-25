@@ -4,7 +4,6 @@ import { belugaVisits } from '@/lib/beluga/client'
 import { ok, err } from '@/lib/api-response'
 
 // GET /api/visits/[id]
-// Returns the LIVI visit record, optionally refreshed from Beluga.
 export async function GET(
   _req: NextRequest,
   { params }: { params: { id: string } }
@@ -20,18 +19,17 @@ export async function GET(
     return NextResponse.json(err('Visit not found'), { status: 404 })
   }
 
-  // Optionally refresh status from Beluga
-  if (visit.beluga_visit_id) {
+  if (visit.beluga_master_id) {
     try {
-      const bv = await belugaVisits.get(visit.beluga_visit_id)
-      const belugaStatus = mapBelugaStatus(bv.status)
-      if (belugaStatus !== visit.status && visit.status !== 'prescribed' && visit.status !== 'shipped' && visit.status !== 'delivered') {
+      const bv = await belugaVisits.fetch(visit.beluga_master_id)
+      const belugaStatus = mapBelugaVisitStatus(String(bv.visitStatus ?? ''))
+      const terminal = ['prescribed', 'shipped', 'delivered', 'cancelled']
+      if (belugaStatus && !terminal.includes(visit.status)) {
         await db
           .from('visits')
-          .update({ status: belugaStatus, zoom_link: bv.zoom_link ?? visit.zoom_link })
+          .update({ status: belugaStatus, updated_at: new Date().toISOString() })
           .eq('id', params.id)
         visit.status = belugaStatus
-        visit.zoom_link = bv.zoom_link ?? visit.zoom_link
       }
     } catch (e) {
       console.warn('Could not refresh from Beluga:', e)
@@ -41,13 +39,19 @@ export async function GET(
   return NextResponse.json(ok(visit))
 }
 
-function mapBelugaStatus(s: string): string {
+function mapBelugaVisitStatus(s: string): string | null {
   switch (s) {
-    case 'draft': return 'draft'
-    case 'submitted': return 'submitted'
-    case 'pending_review': return 'under_review'
-    case 'active': return 'active'
-    case 'completed': return 'active'
-    default: return s
+    case 'pending':
+    case 'admin':
+    case 'holding':
+      return 'under_review'
+    case 'active':
+      return 'active'
+    case 'resolved':
+      return 'active'
+    case 'canceled':
+      return 'cancelled'
+    default:
+      return null
   }
 }

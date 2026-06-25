@@ -1,13 +1,38 @@
-// Beluga Health API client
-// Auth: Bearer token via BELUGA_API_KEY env var
-// All functions are server-side only.
+// Beluga Health API client — aligned with official Beluga documentation.
+// Auth: Authorization: Bearer {BELUGA_API_KEY}
+// Staging: https://api-staging.belugahealth.com
+// Production: https://api.belugahealth.com
 
-const BASE = () => process.env.BELUGA_API_URL ?? 'https://api.belugahealth.com/v1'
+import { createHmac, randomUUID, timingSafeEqual } from 'crypto'
+import { buildFormObj, type BelugaFormObj } from './transform'
+
+const BASE = () => process.env.BELUGA_API_URL ?? 'https://api-staging.belugahealth.com'
 
 function getKey(): string {
   const key = process.env.BELUGA_API_KEY
   if (!key) throw new Error('BELUGA_API_KEY is not configured')
   return key
+}
+
+function visitEndpoint(): string {
+  const path = process.env.BELUGA_VISIT_ENDPOINT ?? '/visit/createNoPay'
+  return path.startsWith('/') ? path : `/${path}`
+}
+
+function chatEndpoint(): string {
+  const path = process.env.BELUGA_CHAT_ENDPOINT ?? '/external/receiveChat'
+  return path.startsWith('/') ? path : `/${path}`
+}
+
+export class BelugaError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly body: string,
+    public readonly endpoint: string
+  ) {
+    super(`Beluga ${status} @ ${endpoint}: ${body}`)
+    this.name = 'BelugaError'
+  }
 }
 
 async function belugaFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -22,199 +47,173 @@ async function belugaFetch<T>(path: string, init: RequestInit = {}): Promise<T> 
     },
   })
 
-  if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new BelugaError(res.status, body, path)
-  }
-
   const text = await res.text()
-  return text ? (JSON.parse(text) as T) : ({} as T)
-}
-
-export class BelugaError extends Error {
-  constructor(
-    public readonly status: number,
-    public readonly body: string,
-    public readonly endpoint: string
-  ) {
-    super(`Beluga ${status} @ ${endpoint}: ${body}`)
-    this.name = 'BelugaError'
+  let parsed: Record<string, unknown> = {}
+  if (text) {
+    try {
+      parsed = JSON.parse(text) as Record<string, unknown>
+    } catch {
+      if (!res.ok) throw new BelugaError(res.status, text, path)
+      throw new BelugaError(res.status, 'Invalid JSON response', path)
+    }
   }
+
+  const bodyStatus = parsed.status
+  if (bodyStatus === 400 || bodyStatus === '400') {
+    const msg = String(parsed.error ?? parsed.info ?? text)
+    throw new BelugaError(400, msg, path)
+  }
+
+  if (!res.ok) {
+    throw new BelugaError(res.status, text || res.statusText, path)
+  }
+
+  return parsed as T
 }
 
-// ─── Patient ─────────────────────────────────────────────────────────────────
+// ─── Visit creation (masterId flow — no ID photos) ───────────────────────────
 
-export interface BelugaCreatePatientInput {
-  external_id: string       // LIVI user ID
-  email: string
-  first_name: string
-  last_name: string
-  date_of_birth: string     // YYYY-MM-DD
-  phone: string
-  gender: string
-  address: {
-    line1: string
+export interface BelugaCreateVisitInput {
+  masterId?: string
+  patient_email: string
+  chief_complaint?: string
+  questionnaire?: Record<string, unknown>
+  profile: {
+    first_name: string
+    last_name: string
+    date_of_birth: string
+    phone: string
+    gender: string
+    address_line1: string
     city: string
     state: string
     zip: string
   }
+  visitType?: string
+  pharmacyId?: string
+  company?: string
 }
 
-export interface BelugaPatientResponse {
-  id: string
-  external_id: string
-  email: string
-  first_name: string
-  last_name: string
-  created_at: string
-}
-
-export const belugaPatients = {
-  create(data: BelugaCreatePatientInput) {
-    return belugaFetch<BelugaPatientResponse>('/patients', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  },
-
-  get(belugaPatientId: string) {
-    return belugaFetch<BelugaPatientResponse>(`/patients/${belugaPatientId}`)
-  },
-
-  findByExternalId(liviUserId: string) {
-    return belugaFetch<{ patients: BelugaPatientResponse[] }>(
-      `/patients?external_id=${encodeURIComponent(liviUserId)}`
-    )
-  },
-}
-
-// ─── Visits ──────────────────────────────────────────────────────────────────
-
-export interface BelugaCreateVisitInput {
-  patient_id: string              // Beluga patient ID
-  visit_type: string              // 'async' | 'sync'
-  questionnaire: Record<string, unknown>
-  scheduled_at?: string           // ISO-8601 for sync visits
-}
-
-export interface BelugaVisitResponse {
-  id: string
-  patient_id: string
-  doctor_id: string | null
-  status: string
-  visit_type: string
-  questionnaire: Record<string, unknown>
-  zoom_link: string | null
-  created_at: string
-  updated_at: string
+export interface BelugaVisitCreateResult {
+  masterId: string
+  visitId: string | null
+  raw: Record<string, unknown>
 }
 
 export const belugaVisits = {
-  create(data: BelugaCreateVisitInput) {
-    return belugaFetch<BelugaVisitResponse>('/visits', {
-      method: 'POST',
-      body: JSON.stringify(data),
+  async create(input: BelugaCreateVisitInput): Promise<BelugaVisitCreateResult> {
+    const masterId = input.masterId ?? randomUUID()
+    const formObj = buildFormObj({
+      profile: input.profile,
+      patient_email: input.patient_email,
+      questionnaire: input.questionnaire,
+      chief_complaint: input.chief_complaint,
     })
+
+    const payload = {
+      formObj,
+      pharmacyId: input.pharmacyId ?? process.env.BELUGA_PHARMACY_ID ?? '',
+      masterId,
+      company: input.company ?? process.env.BELUGA_COMPANY ?? 'livi',
+      visitType: input.visitType ?? process.env.BELUGA_VISIT_TYPE ?? 'weightloss',
+    }
+
+    if (!payload.pharmacyId) {
+      throw new BelugaError(400, 'BELUGA_PHARMACY_ID is not configured', visitEndpoint())
+    }
+
+    const res = await belugaFetch<Record<string, unknown>>(visitEndpoint(), {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+
+    let visitId: string | null = null
+    const data = res.data
+    if (typeof data === 'string') {
+      visitId = data
+    } else if (data && typeof data === 'object') {
+      const obj = data as Record<string, unknown>
+      visitId = typeof obj.visitId === 'string' ? obj.visitId : null
+    }
+
+    return { masterId, visitId, raw: res }
   },
 
-  get(visitId: string) {
-    return belugaFetch<BelugaVisitResponse>(`/visits/${visitId}`)
-  },
-
-  list(params: Record<string, string> = {}) {
-    const qs = new URLSearchParams(params).toString()
-    return belugaFetch<{ visits: BelugaVisitResponse[]; total: number }>(
-      `/visits${qs ? '?' + qs : ''}`
-    )
+  fetch(masterId: string) {
+    return belugaFetch<Record<string, unknown>>(`/visit/externalFetch/${encodeURIComponent(masterId)}`)
   },
 }
 
-// ─── Prescriptions ───────────────────────────────────────────────────────────
+// ─── Patient lookup ──────────────────────────────────────────────────────────
 
-export interface BelugaCreateRxInput {
-  medication_name: string
-  ndc_code?: string
-  dosage: string
-  quantity: number
-  refills: number
-  days_supply: number
-  special_instructions?: string
-  pharmacy_npi?: string
+export const belugaPatients = {
+  fetchByPhone(phone: string) {
+    const digits = phone.replace(/\D/g, '').slice(-10)
+    return belugaFetch<Record<string, unknown>>(`/patient/externalFetch/${digits}`)
+  },
 }
 
-export interface BelugaRxResponse {
-  id: string
-  visit_id: string
-  patient_id: string
-  doctor_id: string
-  doctor_first_name: string
-  doctor_last_name: string
-  doctor_npi: string
-  medication_name: string
-  ndc_code: string
-  dosage: string
-  quantity: number
-  refills: number
-  days_supply: number
-  special_instructions: string
-  written_at: string
+// ─── Prescription update / resend ────────────────────────────────────────────
+
+export interface BelugaUpdateVisitInput {
+  masterId: string
+  patientPreference: Array<{
+    name: string
+    strength: string
+    quantity: string
+    refills: string
+    daysSupply?: string
+    medId: string
+  }>
+  pharmacyId?: string
 }
 
 export const belugaRx = {
-  write(visitId: string, data: BelugaCreateRxInput) {
-    return belugaFetch<BelugaRxResponse>(`/visits/${visitId}/prescriptions`, {
+  updateVisit(input: BelugaUpdateVisitInput) {
+    return belugaFetch<Record<string, unknown>>('/external/updateVisit', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        patientPreference: input.patientPreference,
+        pharmacyId: input.pharmacyId ?? process.env.BELUGA_PHARMACY_ID ?? '',
+        masterId: input.masterId,
+        apiKey: getKey(),
+      }),
     })
   },
-
-  list(visitId: string) {
-    return belugaFetch<{ prescriptions: BelugaRxResponse[] }>(
-      `/visits/${visitId}/prescriptions`
-    )
-  },
-
-  get(visitId: string, rxId: string) {
-    return belugaFetch<BelugaRxResponse>(`/visits/${visitId}/prescriptions/${rxId}`)
-  },
 }
 
-// ─── Messaging ───────────────────────────────────────────────────────────────
-
-export interface BelugaMessageResponse {
-  id: string
-  visit_id: string
-  sender_id: string
-  sender_type: 'patient' | 'doctor' | 'system'
-  message: string
-  created_at: string
-}
+// ─── Patient chat ─────────────────────────────────────────────────────────────
 
 export const belugaMessaging = {
-  send(visitId: string, message: string, sender_type: 'patient' | 'doctor') {
-    return belugaFetch<BelugaMessageResponse>(`/visits/${visitId}/messages`, {
+  sendPatientChat(input: {
+    masterId: string
+    firstName: string
+    lastName: string
+    content: string
+    isMedia?: boolean
+  }) {
+    return belugaFetch<Record<string, unknown>>(chatEndpoint(), {
       method: 'POST',
-      body: JSON.stringify({ message, sender_type }),
+      body: JSON.stringify({
+        firstName: input.firstName,
+        lastName: input.lastName,
+        content: input.content,
+        isMedia: input.isMedia ?? false,
+        masterId: input.masterId,
+      }),
     })
-  },
-
-  list(visitId: string) {
-    return belugaFetch<{ messages: BelugaMessageResponse[] }>(
-      `/visits/${visitId}/messages`
-    )
   },
 }
 
-// ─── Webhook Signature Verification ─────────────────────────────────────────
-
-import { createHmac, timingSafeEqual } from 'crypto'
+// ─── Webhook signature verification ──────────────────────────────────────────
 
 export function verifyBelugaWebhook(rawBody: string, signature: string): boolean {
   const secret = process.env.BELUGA_WEBHOOK_SECRET
-  if (!secret) return true // Skip verification if secret not configured
+  if (!secret) return true
+  if (!signature) return false
   try {
     const expected = createHmac('sha256', secret).update(rawBody).digest('hex')
-    const sigBuf = Buffer.from(signature.replace('sha256=', ''), 'hex')
+    const sigBuf = Buffer.from(signature.replace(/^sha256=/, ''), 'hex')
     const expBuf = Buffer.from(expected, 'hex')
     if (sigBuf.length !== expBuf.length) return false
     return timingSafeEqual(sigBuf, expBuf)
@@ -222,3 +221,5 @@ export function verifyBelugaWebhook(rawBody: string, signature: string): boolean
     return false
   }
 }
+
+export type { BelugaFormObj }

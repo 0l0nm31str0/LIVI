@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase'
-import { curexaOrders, curexaMessaging } from '@/lib/curexa/client'
+import { curexaOrders } from '@/lib/curexa/client'
 import { ok, err } from '@/lib/api-response'
 
 // GET /api/orders/[id] - get order by LIVI visit ID, with fresh Curexa status
@@ -25,11 +25,9 @@ export async function GET(
     await db.from('visits').update({
       curexa_order_status: status.status,
       tracking_number: status.tracking_number,
-      tracking_url: status.tracking_url,
       carrier: status.carrier,
-      estimated_delivery: status.estimated_delivery,
     }).eq('id', visit.id)
-    return NextResponse.json(ok({ ...visit, ...status }))
+    return NextResponse.json(ok({ ...visit, curexa_order_status: status.status, tracking_number: status.tracking_number, carrier: status.carrier, status_details: status.status_details }))
   } catch {
     return NextResponse.json(ok(visit))
   }

@@ -9,36 +9,14 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   const db = getServerSupabase()
+  const { data: visit } = await db
+    .from('visits')
+    .select('id,beluga_master_id,patient_id')
+    .eq('id', params.id)
+    .single()
 
-  // Get LIVI visit to find Beluga visit ID
-  const { data: visit } = await db.from('visits').select('id,beluga_visit_id,curexa_order_id').eq('id', params.id).single()
   if (!visit) return NextResponse.json(err('Visit not found'), { status: 404 })
 
-  // Fetch Beluga messages and sync to DB
-  if (visit.beluga_visit_id) {
-    try {
-      const { messages } = await belugaMessaging.list(visit.beluga_visit_id)
-      for (const m of messages) {
-        await db.from('visit_messages').upsert(
-          {
-            visit_id: visit.id,
-            sender_id: m.sender_id,
-            sender_name: m.sender_type === 'doctor' ? 'Doctor' : m.sender_type === 'system' ? 'LIVI' : 'Patient',
-            sender_type: m.sender_type,
-            message: m.message,
-            source: 'beluga',
-            external_id: m.id,
-            created_at: m.created_at,
-          },
-          { onConflict: 'external_id' }
-        )
-      }
-    } catch (e) {
-      console.warn('Could not sync Beluga messages:', e)
-    }
-  }
-
-  // Return all messages from DB
   const { data, error } = await db
     .from('visit_messages')
     .select('*')
@@ -49,8 +27,7 @@ export async function GET(
   return NextResponse.json(ok(data))
 }
 
-// POST /api/visits/[id]/messages
-// Sends a patient message via Beluga.
+// POST /api/visits/[id]/messages — send patient chat via Beluga
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -59,15 +36,29 @@ export async function POST(
   if (!body?.message) return NextResponse.json(err('message is required'), { status: 400 })
 
   const db = getServerSupabase()
-  const { data: visit } = await db.from('visits').select('id,beluga_visit_id').eq('id', params.id).single()
+  const { data: visit } = await db
+    .from('visits')
+    .select('id,beluga_master_id,patient_id')
+    .eq('id', params.id)
+    .single()
+
   if (!visit) return NextResponse.json(err('Visit not found'), { status: 404 })
 
-  let externalId: string | null = null
+  const { data: patient } = await db
+    .from('patient_profiles')
+    .select('first_name,last_name')
+    .eq('livi_user_id', visit.patient_id)
+    .single()
 
-  if (visit.beluga_visit_id) {
+  if (visit.beluga_master_id && patient) {
     try {
-      const m = await belugaMessaging.send(visit.beluga_visit_id, body.message, 'patient')
-      externalId = m.id
+      await belugaMessaging.sendPatientChat({
+        masterId: visit.beluga_master_id,
+        firstName: patient.first_name,
+        lastName: patient.last_name,
+        content: body.message,
+        isMedia: false,
+      })
     } catch (e) {
       console.warn('Beluga send failed, saving locally only:', e)
     }
@@ -82,7 +73,6 @@ export async function POST(
       sender_type: 'patient',
       message: body.message,
       source: 'beluga',
-      external_id: externalId,
     })
     .select()
     .single()
