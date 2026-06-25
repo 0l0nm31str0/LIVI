@@ -29,12 +29,14 @@ export async function POST(req: NextRequest) {
 
   const db = getServerSupabase()
 
-  // Log all events for audit trail
-  await db.from('webhook_events').insert({
-    source: 'beluga',
-    event_type: event.type,
-    payload: event.data,
-  })
+  // Log event and capture the row id for later update
+  const { data: logRow } = await db
+    .from('webhook_events')
+    .insert({ source: 'beluga', event_type: event.type, payload: event.data })
+    .select('id')
+    .single()
+
+  const logId: string | null = logRow?.id ?? null
 
   try {
     switch (event.type) {
@@ -62,23 +64,11 @@ export async function POST(req: NextRequest) {
         break
     }
 
-    await db
-      .from('webhook_events')
-      .update({ processed: true })
-      .eq('source', 'beluga')
-      .eq('event_type', event.type)
-      .order('received_at', { ascending: false })
-      .limit(1)
+    if (logId) await db.from('webhook_events').update({ processed: true }).eq('id', logId)
   } catch (e) {
     const errMsg = e instanceof Error ? e.message : String(e)
     console.error(`Beluga webhook error [${event.type}]:`, errMsg)
-    await db
-      .from('webhook_events')
-      .update({ error: errMsg })
-      .eq('source', 'beluga')
-      .eq('event_type', event.type)
-      .order('received_at', { ascending: false })
-      .limit(1)
+    if (logId) await db.from('webhook_events').update({ error: errMsg }).eq('id', logId)
   }
 
   return NextResponse.json({ received: true })
@@ -91,7 +81,6 @@ async function handleRxWritten(
   const belugaVisitId = data.visit_id as string
   const rx = data.prescription as Record<string, unknown>
 
-  // Find LIVI visit
   const { data: visit } = await db
     .from('visits')
     .select('*')
@@ -103,7 +92,6 @@ async function handleRxWritten(
     return
   }
 
-  // Get patient profile (needed for Curexa order)
   const { data: patient } = await db
     .from('patient_profiles')
     .select('*')
@@ -112,7 +100,6 @@ async function handleRxWritten(
 
   if (!patient) {
     console.error('[RX_WRITTEN] Patient profile not found for:', visit.patient_id)
-    // Still mark as prescribed even if Curexa fails
     await db
       .from('visits')
       .update({ status: 'prescribed', rx_written: true, prescription_data: rx })
@@ -120,10 +107,9 @@ async function handleRxWritten(
     return
   }
 
-  // Build Curexa order payload
-  // patient_id MUST be the patient's email for eScript cross-matching
+  // patient_id MUST be the patient's email for eScript cross-matching with Curexa
   const curexaPayload: CurexaCreateOrderInput = {
-    patient_id: patient.email,                   // CRITICAL: email as ID
+    patient_id: patient.email,
     patient_first_name: patient.first_name,
     patient_last_name: patient.last_name,
     patient_dob: formatDob(patient.date_of_birth),
@@ -140,7 +126,7 @@ async function handleRxWritten(
     dosage: rx.dosage as string,
     quantity: rx.quantity as number,
     refills: rx.refills as number,
-    days_supply: rx.days_supply as number ?? 30,
+    days_supply: (rx.days_supply as number) ?? 30,
     special_instructions: rx.special_instructions as string | undefined,
 
     prescriber_first_name: (data.doctor_first_name as string) ?? '',
@@ -200,13 +186,13 @@ async function handleIncomingMessage(
   const isDoctor = eventType === 'DOCTOR_CHAT'
   await db.from('visit_messages').insert({
     visit_id: visit.id,
-    sender_id: data.sender_id as string ?? null,
+    sender_id: (data.sender_id as string) ?? null,
     sender_name: isDoctor ? ((data.doctor_name as string) ?? 'Doctor') : 'LIVI Support',
     sender_type: isDoctor ? 'doctor' : 'system',
     message: data.message as string,
     source: 'beluga',
-    external_id: data.message_id as string ?? null,
-    created_at: data.created_at as string ?? new Date().toISOString(),
+    external_id: (data.message_id as string) ?? null,
+    created_at: (data.created_at as string) ?? new Date().toISOString(),
   })
 }
 

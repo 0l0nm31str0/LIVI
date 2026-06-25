@@ -3,25 +3,23 @@ import { getServerSupabase } from '@/lib/supabase'
 import { belugaPatients, belugaVisits, BelugaError } from '@/lib/beluga/client'
 import { ok, err } from '@/lib/api-response'
 
-// GET /api/visits?patient_id=xxx
+// GET /api/visits?patient_id=xxx&status=active
 export async function GET(req: NextRequest) {
   const patientId = req.nextUrl.searchParams.get('patient_id')
-  if (!patientId) return NextResponse.json(err('patient_id is required'), { status: 400 })
+  const status    = req.nextUrl.searchParams.get('status')
 
   const db = getServerSupabase()
-  const { data, error } = await db
-    .from('visits')
-    .select('*')
-    .eq('patient_id', patientId)
-    .order('created_at', { ascending: false })
+  let query = db.from('visits').select('*').order('created_at', { ascending: false })
 
+  if (patientId) query = query.eq('patient_id', patientId)
+  if (status)    query = query.eq('status', status)
+
+  const { data, error } = await query
   if (error) return NextResponse.json(err(error.message), { status: 500 })
   return NextResponse.json(ok(data))
 }
 
 // POST /api/visits
-// Creates (or retrieves) a Beluga patient, then creates a Beluga visit.
-// Saves everything to Supabase.
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null)
   if (!body) return NextResponse.json(err('Invalid JSON'), { status: 400 })
@@ -58,7 +56,7 @@ export async function POST(req: NextRequest) {
 
   const db = getServerSupabase()
 
-  // Upsert patient profile in Supabase
+  // Upsert patient profile
   await db.from('patient_profiles').upsert(
     {
       livi_user_id: patient_id,
