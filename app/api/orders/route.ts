@@ -1,53 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ordersDb, prescriptionsDb } from '@/lib/mock-db'
-import { compressData } from '@/lib/compression'
+import { getServerSupabase } from '@/lib/supabase'
+import { curexaOrders } from '@/lib/curexa/client'
+import { ok, err } from '@/lib/api-response'
 
+// GET /api/orders?patient_id=xxx
+// Returns all visits that have a Curexa order, with fresh status from Curexa.
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url)
-  const patientId = searchParams.get('patient_id')
-  const pharmacyId = searchParams.get('pharmacy_id')
-  const useCompression = searchParams.get('compress') === 'true'
+  const patientId = req.nextUrl.searchParams.get('patient_id')
+  if (!patientId) return NextResponse.json(err('patient_id is required'), { status: 400 })
 
-  let data
-  if (patientId) data = ordersDb.byPatient(patientId)
-  else if (pharmacyId) data = ordersDb.byPharmacy(pharmacyId)
-  else data = ordersDb.getAll()
+  const db = getServerSupabase()
+  const { data: visits, error } = await db
+    .from('visits')
+    .select('id,status,curexa_order_id,curexa_order_status,tracking_number,tracking_url,carrier,estimated_delivery,prescription_data,created_at,updated_at')
+    .eq('patient_id', patientId)
+    .not('curexa_order_id', 'is', null)
+    .order('created_at', { ascending: false })
 
-  const payload = { success: true, data }
+  if (error) return NextResponse.json(err(error.message), { status: 500 })
 
-  if (useCompression) {
-    const jsonStr = JSON.stringify(payload)
-    if (Buffer.byteLength(jsonStr, 'utf-8') > 1000) {
-      const result = await compressData(payload)
-      return NextResponse.json({
-        success: true,
-        data: result.compressed,
-        meta: { compressed: true, compressionRatio: result.metadata.ratio },
-      })
-    }
-  }
+  // Optionally refresh status from Curexa for active orders
+  const activeStatuses = ['new', 'processing', 'payment_required', 'in_progress', 'shipped', 'out_for_delivery']
+  const refreshed = await Promise.all(
+    (visits ?? []).map(async (v) => {
+      if (v.curexa_order_id && activeStatuses.includes(v.curexa_order_status ?? '')) {
+        try {
+          const status = await curexaOrders.status(v.curexa_order_id)
+          if (status.status !== v.curexa_order_status) {
+            await db.from('visits').update({
+              curexa_order_status: status.status,
+              tracking_number: status.tracking_number,
+              tracking_url: status.tracking_url,
+              carrier: status.carrier,
+              estimated_delivery: status.estimated_delivery,
+            }).eq('id', v.id)
+            return { ...v, ...status }
+          }
+        } catch {
+          // Non-fatal: return cached data
+        }
+      }
+      return v
+    })
+  )
 
-  return NextResponse.json(payload)
-}
-
-export async function POST(req: NextRequest) {
-  const body = await req.json()
-
-  const order = ordersDb.create({
-    prescription_id: body.prescription_id,
-    patient_id: body.patient_id,
-    pharmacy_id: body.pharmacy_id,
-    order_date: new Date().toISOString(),
-    status: 'payment_confirmed',
-    total_amount: body.total_amount ?? 19.99,
-    shipping_address: body.shipping_address,
-    tracking_number: null,
-    payment_method: body.payment_method ?? 'credit_card',
-    stripe_payment_id: body.payment_method === 'credit_card' ? `pi_mock_${Date.now()}` : null,
-  })
-
-  // Update prescription status to ordered
-  prescriptionsDb.update(body.prescription_id, { status: 'ordered' })
-
-  return NextResponse.json({ success: true, data: order }, { status: 201 })
+  return NextResponse.json(ok(refreshed))
 }
