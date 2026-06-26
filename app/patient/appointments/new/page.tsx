@@ -5,6 +5,22 @@ import { CheckCircle, Video, FileText, ChevronRight, ChevronLeft } from 'lucide-
 import { useAuthStore } from '@/stores/auth-store'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { AlertBanner } from '@/components/shared/AlertBanner'
+import { toast } from '@/hooks/use-toast'
+import { PageHeader } from '@/components/app/PageHeader'
+import { StepIndicator } from '@/components/app/StepIndicator'
+import { AppCard } from '@/components/app/AppCard'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 type Step = 'profile' | 'complaint' | 'questionnaire' | 'review'
 
@@ -109,8 +125,8 @@ export default function BookVisitPage() {
   if (success) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
-        <div className="rounded-full bg-secondary-100 p-5 mb-5">
-          <CheckCircle className="h-12 w-12 text-secondary-600" />
+        <div className="rounded-full bg-accent-light p-5 mb-5">
+          <CheckCircle className="h-12 w-12 text-sage" />
         </div>
         <h2 className="text-2xl font-bold text-foreground mb-2">Visit request submitted!</h2>
         <p className="text-sm text-muted-foreground max-w-sm">
@@ -123,35 +139,21 @@ export default function BookVisitPage() {
   }
 
   return (
-    <div className="max-w-2xl">
-      {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-foreground">Start a Visit</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Complete your profile and describe your symptoms. A doctor will review your case.
-        </p>
-      </div>
+    <div className="max-w-2xl page-enter">
+      <PageHeader
+        title="Start a visit"
+        description="Complete your profile and describe your symptoms. A doctor will review your case."
+      />
 
-      {/* Step indicator */}
-      <div className="mb-6 flex items-center gap-2">
-        {STEP_ORDER.map((s, i) => (
-          <div key={s} className="flex items-center gap-2">
-            <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-semibold transition-colors ${
-              i < currentIdx ? 'bg-secondary-600 text-white' :
-              i === currentIdx ? 'bg-primary-600 text-white' :
-              'bg-muted/20 text-muted-foreground'
-            }`}>
-              {i < currentIdx ? '✓' : i + 1}
-            </div>
-            <span className={`text-xs font-medium hide-mobile ${
-              i === currentIdx ? 'text-foreground' : 'text-muted-foreground'
-            }`}>{STEP_LABELS[s]}</span>
-            {i < STEP_ORDER.length - 1 && <div className="h-px w-6 bg-border" />}
-          </div>
-        ))}
-      </div>
+      <StepIndicator
+        steps={STEP_ORDER.map(s => STEP_LABELS[s])}
+        currentStep={currentIdx}
+        className="mb-6"
+      />
 
-      <div className="card p-6">
+      <AppCard noPadding>
+        <div className="p-6">
+        <div key={step} className="animate-fade-in">
         {/* STEP 1: Profile */}
         {step === 'profile' && (
           <div className="space-y-4">
@@ -162,66 +164,81 @@ export default function BookVisitPage() {
 
             {/* Visit type selector */}
             <div>
-              <label className="form-label">Visit Type</label>
+              <Label className="mb-1.5 block">Visit Type</Label>
               <div className="grid grid-cols-2 gap-3">
                 {[
                   { value: 'async', icon: FileText, title: 'Async Consultation', desc: 'Doctor reviews & responds within 24h' },
                   { value: 'sync',  icon: Video,     title: 'Video Call',         desc: 'Live telemedicine appointment' },
-                ].map(({ value, icon: Icon, title, desc }) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setVisitType(value as 'async' | 'sync')}
-                    className={`rounded-xl border-2 p-4 text-left transition-colors ${
-                      visitType === value
-                        ? 'border-primary-600 bg-primary-50'
-                        : 'border-[color:var(--input)] hover:border-primary-200'
-                    }`}
-                  >
-                    <Icon className={`h-5 w-5 mb-2 ${ visitType === value ? 'text-primary-600' : 'text-muted-foreground' }`} />
-                    <p className="text-sm font-semibold text-foreground">{title}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
-                  </button>
-                ))}
+                ].map(({ value, icon: Icon, title, desc }) => {
+                  const selected = visitType === value
+                  return (
+                    <div
+                      key={value}
+                      className={cn(
+                        'rounded-xl',
+                        selected && 'ring-2 ring-coral ring-offset-2 ring-offset-surface'
+                      )}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setVisitType(value as 'async' | 'sync')}
+                        className={cn(
+                          'w-full rounded-[10px] border p-4 text-left transition-colors',
+                          selected
+                            ? 'border-ink bg-accent-light'
+                            : 'border-border hover:border-ink/30'
+                        )}
+                      >
+                        <Icon className={cn('mb-2 h-5 w-5', selected ? 'text-sage' : 'text-muted-foreground')} />
+                        <p className="text-sm font-semibold text-foreground">{title}</p>
+                        <p className="mt-0.5 text-xs text-muted-foreground">{desc}</p>
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="form-label">Date of Birth <span className="text-destructive">*</span></label>
-                <input type="date" className="form-input" value={dob} onChange={e => setDob(e.target.value)} required />
+                <Label className="mb-1.5 block">Date of Birth <span className="text-destructive">*</span></Label>
+                <Input type="date" value={dob} onChange={e => setDob(e.target.value)} required />
               </div>
               <div>
-                <label className="form-label">Phone <span className="text-destructive">*</span></label>
-                <input type="tel" className="form-input" placeholder="(555) 000-0000" value={phone} onChange={e => setPhone(e.target.value)} />
+                <Label className="mb-1.5 block">Phone <span className="text-destructive">*</span></Label>
+                <Input type="tel" placeholder="(555) 000-0000" value={phone} onChange={e => setPhone(e.target.value)} />
               </div>
               <div>
-                <label className="form-label">Gender <span className="text-destructive">*</span></label>
-                <select className="form-select" value={gender} onChange={e => setGender(e.target.value)}>
-                  <option value="">Select…</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other / Prefer not to say</option>
-                </select>
+                <Label className="mb-1.5 block">Gender <span className="text-destructive">*</span></Label>
+                <Select value={gender || undefined} onValueChange={setGender}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="other">Other / Prefer not to say</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div>
-              <label className="form-label">Street Address <span className="text-destructive">*</span></label>
-              <input className="form-input" placeholder="123 Main St" value={address} onChange={e => setAddress(e.target.value)} />
+              <Label className="mb-1.5 block">Street Address <span className="text-destructive">*</span></Label>
+              <Input placeholder="123 Main St" value={address} onChange={e => setAddress(e.target.value)} />
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-1">
-                <label className="form-label">City</label>
-                <input className="form-input" placeholder="San Francisco" value={city} onChange={e => setCity(e.target.value)} />
+                <Label className="mb-1.5 block">City</Label>
+                <Input placeholder="San Francisco" value={city} onChange={e => setCity(e.target.value)} />
               </div>
               <div>
-                <label className="form-label">State</label>
-                <input className="form-input" placeholder="CA" maxLength={2} value={state} onChange={e => setState(e.target.value.toUpperCase())} />
+                <Label className="mb-1.5 block">State</Label>
+                <Input placeholder="CA" maxLength={2} value={state} onChange={e => setState(e.target.value.toUpperCase())} />
               </div>
               <div>
-                <label className="form-label">ZIP</label>
-                <input className="form-input" placeholder="94105" value={zip} onChange={e => setZip(e.target.value)} />
+                <Label className="mb-1.5 block">ZIP</Label>
+                <Input placeholder="94105" value={zip} onChange={e => setZip(e.target.value)} />
               </div>
             </div>
           </div>
@@ -235,9 +252,8 @@ export default function BookVisitPage() {
               <p className="text-sm text-muted-foreground mt-0.5">Briefly describe the primary reason for your visit.</p>
             </div>
             <div>
-              <label className="form-label">What brings you in today? <span className="text-destructive">*</span></label>
-              <textarea
-                className="form-textarea"
+              <Label className="mb-1.5 block">What brings you in today? <span className="text-destructive">*</span></Label>
+              <Textarea
                 rows={4}
                 placeholder="e.g. I’ve had a persistent sore throat and mild fever for 3 days..."
                 value={chiefComplaint}
@@ -257,56 +273,65 @@ export default function BookVisitPage() {
             </div>
 
             <div>
-              <label className="form-label">Describe your symptoms</label>
-              <textarea className="form-textarea" rows={3} placeholder="Pain, swelling, redness, fever, fatigue…" value={symptoms} onChange={e => setSymptoms(e.target.value)} />
+              <Label className="mb-1.5 block">Describe your symptoms</Label>
+              <Textarea rows={3} placeholder="Pain, swelling, redness, fever, fatigue…" value={symptoms} onChange={e => setSymptoms(e.target.value)} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="form-label">How long have you had this?</label>
-                <input className="form-input" placeholder="e.g. 3 days, 2 weeks" value={duration} onChange={e => setDuration(e.target.value)} />
+                <Label className="mb-1.5 block">How long have you had this?</Label>
+                <Input placeholder="e.g. 3 days, 2 weeks" value={duration} onChange={e => setDuration(e.target.value)} />
               </div>
               <div>
-                <label className="form-label">Severity</label>
-                <select className="form-select" value={severity} onChange={e => setSeverity(e.target.value)}>
-                  <option value="mild">Mild — noticeable but not limiting</option>
-                  <option value="moderate">Moderate — affecting daily activities</option>
-                  <option value="severe">Severe — very limiting</option>
-                </select>
+                <Label className="mb-1.5 block">Severity</Label>
+                <Select value={severity} onValueChange={setSeverity}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mild">Mild — noticeable but not limiting</SelectItem>
+                    <SelectItem value="moderate">Moderate — affecting daily activities</SelectItem>
+                    <SelectItem value="severe">Severe — very limiting</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div>
-              <label className="form-label">Known allergies (medications, foods, etc.)</label>
-              <input className="form-input" placeholder="e.g. Penicillin, sulfa drugs, shellfish" value={allergies} onChange={e => setAllergies(e.target.value)} />
+              <Label className="mb-1.5 block">Known allergies (medications, foods, etc.)</Label>
+              <Input placeholder="e.g. Penicillin, sulfa drugs, shellfish" value={allergies} onChange={e => setAllergies(e.target.value)} />
             </div>
 
             <div>
-              <label className="form-label">Current medications</label>
-              <textarea className="form-textarea" rows={2} placeholder="List any medications, supplements, or vitamins you’re taking…" value={currentMeds} onChange={e => setCurrentMeds(e.target.value)} />
+              <Label className="mb-1.5 block">Current medications</Label>
+              <Textarea rows={2} placeholder="List any medications, supplements, or vitamins you’re taking…" value={currentMeds} onChange={e => setCurrentMeds(e.target.value)} />
             </div>
 
             <div>
-              <label className="form-label">Existing medical conditions</label>
-              <input className="form-input" placeholder="e.g. Diabetes, hypertension, asthma" value={conditions} onChange={e => setConditions(e.target.value)} />
+              <Label className="mb-1.5 block">Existing medical conditions</Label>
+              <Input placeholder="e.g. Diabetes, hypertension, asthma" value={conditions} onChange={e => setConditions(e.target.value)} />
             </div>
 
             {(gender === 'female' || gender === 'other') && (
               <div>
-                <label className="form-label">Are you currently pregnant or breastfeeding?</label>
-                <select className="form-select" value={pregnant} onChange={e => setPregnant(e.target.value)}>
-                  <option value="">Select…</option>
-                  <option value="no">No</option>
-                  <option value="pregnant">Yes, pregnant</option>
-                  <option value="breastfeeding">Yes, breastfeeding</option>
-                  <option value="unknown">Unknown / prefer not to say</option>
-                </select>
+                <Label className="mb-1.5 block">Are you currently pregnant or breastfeeding?</Label>
+                <Select value={pregnant || undefined} onValueChange={setPregnant}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="no">No</SelectItem>
+                    <SelectItem value="pregnant">Yes, pregnant</SelectItem>
+                    <SelectItem value="breastfeeding">Yes, breastfeeding</SelectItem>
+                    <SelectItem value="unknown">Unknown / prefer not to say</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             )}
 
             <div>
-              <label className="form-label">Anything else you’d like the doctor to know?</label>
-              <textarea className="form-textarea" rows={2} placeholder="Additional context, previous treatments, etc.…" value={additionalNotes} onChange={e => setAdditionalNotes(e.target.value)} />
+              <Label className="mb-1.5 block">Anything else you’d like the doctor to know?</Label>
+              <Textarea rows={2} placeholder="Additional context, previous treatments, etc.…" value={additionalNotes} onChange={e => setAdditionalNotes(e.target.value)} />
             </div>
           </div>
         )}
@@ -331,9 +356,9 @@ export default function BookVisitPage() {
               <ReviewRow label="Shipping Address" value={[address, city, state, zip].filter(Boolean).join(', ') || '—'} />
             </div>
 
-            <div className="rounded-xl bg-primary-50 border border-primary-200 p-4 text-sm text-primary-900">
-              <p className="font-semibold mb-1">What happens next?</p>
-              <ol className="list-decimal list-inside space-y-1 text-primary-800">
+            <div className="rounded-xl bg-accent-light/60 border border-primary-100 p-4 text-sm">
+              <p className="font-medium mb-1 text-foreground">What happens next?</p>
+              <ol className="list-decimal list-inside space-y-1 text-muted-foreground">
                 <li>A licensed physician reviews your submission</li>
                 <li>They may follow up with questions via the messaging thread</li>
                 <li>If appropriate, they write you a prescription</li>
@@ -344,39 +369,36 @@ export default function BookVisitPage() {
             {error && <AlertBanner variant="error" title="Submission Failed" message={error} />}
           </div>
         )}
+        </div>
 
         {/* Navigation */}
         <div className="mt-6 flex items-center justify-between">
-          <button
+          <Button
             type="button"
+            variant="secondary"
             onClick={back}
             disabled={currentIdx === 0}
-            className="btn-secondary disabled:opacity-0 disabled:pointer-events-none"
+            className={currentIdx === 0 ? 'invisible' : ''}
           >
             <ChevronLeft className="h-4 w-4" /> Back
-          </button>
+          </Button>
 
           {step !== 'review' ? (
-            <button
+            <Button
               type="button"
               onClick={next}
               disabled={step === 'complaint' && !chiefComplaint.trim()}
-              className="btn-primary"
             >
               Continue <ChevronRight className="h-4 w-4" />
-            </button>
+            </Button>
           ) : (
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={loading}
-              className="btn-primary"
-            >
-              {loading ? <LoadingSpinner className="text-white" /> : 'Submit Visit Request'}
-            </button>
+            <Button type="button" onClick={handleSubmit} disabled={loading}>
+              {loading ? <LoadingSpinner className="text-white" /> : 'Submit visit request'}
+            </Button>
           )}
         </div>
-      </div>
+        </div>
+      </AppCard>
     </div>
   )
 }

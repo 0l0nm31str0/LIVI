@@ -1,3 +1,5 @@
+import type { VariantProps } from 'class-variance-authority'
+import { Badge, badgeVariants } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { PrescriptionStatus, OrderStatus, VisitStatus, CurexaOrderStatus } from '@/types'
 
@@ -11,62 +13,57 @@ type Status =
   | 'cancelled'
   | string
 
-type BadgeConfig = { label: string; bg: string; text: string; dot: string }
+type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>['variant']>
 
-const statusConfig: Record<string, BadgeConfig> = {
+type StatusConfig = { label: string; variant: BadgeVariant; dot: string }
+
+const statusConfig: Record<string, StatusConfig> = {
   // Appointment
-  scheduled:          { label: 'Scheduled',           bg: 'bg-primary-100',   text: 'text-primary-700',   dot: 'bg-primary-500' },
-  completed:          { label: 'Completed',           bg: 'bg-secondary-100', text: 'text-secondary-700', dot: 'bg-secondary-500' },
-  cancelled:          { label: 'Cancelled',           bg: 'bg-error-100',     text: 'text-error-700',     dot: 'bg-error-500' },
+  scheduled:          { label: 'Scheduled',           variant: 'default',     dot: 'bg-primary' },
+  completed:            { label: 'Completed',           variant: 'secondary',   dot: 'bg-stone-500' },
+  cancelled:            { label: 'Cancelled',           variant: 'destructive', dot: 'bg-error-600' },
 
   // Visit statuses
-  draft:              { label: 'Draft',               bg: 'bg-muted/20',      text: 'text-muted-foreground', dot: 'bg-muted-foreground' },
-  submitted:          { label: 'Submitted',           bg: 'bg-primary-100',   text: 'text-primary-700',   dot: 'bg-primary-400' },
-  under_review:       { label: 'Under Review',        bg: 'bg-warning-100',   text: 'text-warning-800',   dot: 'bg-warning-500' },
-  active:             { label: 'In Consultation',     bg: 'bg-primary-100',   text: 'text-primary-700',   dot: 'bg-primary-600' },
-  prescribed:         { label: 'Rx Written',          bg: 'bg-secondary-50',  text: 'text-secondary-700', dot: 'bg-secondary-500' },
-  shipped:            { label: 'Shipped',             bg: 'bg-primary-50',    text: 'text-primary-700',   dot: 'bg-primary-400' },
-  delivered:          { label: 'Delivered',           bg: 'bg-secondary-100', text: 'text-secondary-700', dot: 'bg-secondary-600' },
+  draft:                { label: 'Draft',               variant: 'outline',     dot: 'bg-muted-foreground' },
+  submitted:            { label: 'Submitted',           variant: 'default',     dot: 'bg-primary-400' },
+  under_review:         { label: 'Under Review',        variant: 'warning',     dot: 'bg-warning-600' },
+  active:               { label: 'In Consultation',     variant: 'default',     dot: 'bg-primary-600' },
+  prescribed:           { label: 'Rx Written',          variant: 'secondary',   dot: 'bg-stone-500' },
+  shipped:              { label: 'Shipped',             variant: 'default',     dot: 'bg-primary-400' },
+  delivered:            { label: 'Delivered',           variant: 'success',     dot: 'bg-success-600' },
 
   // Prescription statuses
-  pending:            { label: 'Pending',             bg: 'bg-warning-100',   text: 'text-warning-800',   dot: 'bg-warning-500' },
-  sent_to_pharmacy:   { label: 'Sent to Pharmacy',   bg: 'bg-primary-100',   text: 'text-primary-700',   dot: 'bg-primary-400' },
-  pharmacy_confirmed: { label: 'Ready',              bg: 'bg-secondary-100', text: 'text-secondary-700', dot: 'bg-secondary-500' },
-  ordered:            { label: 'Ordered',             bg: 'bg-primary-100',   text: 'text-primary-700',   dot: 'bg-primary-500' },
-  fulfilled:          { label: 'Fulfilled',           bg: 'bg-secondary-100', text: 'text-secondary-700', dot: 'bg-secondary-600' },
+  pending:              { label: 'Pending',             variant: 'warning',     dot: 'bg-warning-600' },
+  sent_to_pharmacy:     { label: 'Sent to Pharmacy',    variant: 'default',     dot: 'bg-primary-400' },
+  pharmacy_confirmed:   { label: 'Ready',               variant: 'success',     dot: 'bg-success-600' },
+  ordered:              { label: 'Ordered',             variant: 'default',     dot: 'bg-primary' },
+  fulfilled:            { label: 'Fulfilled',           variant: 'success',     dot: 'bg-success-600' },
 
   // Order statuses
-  pending_payment:    { label: 'Pending Payment',     bg: 'bg-warning-100',   text: 'text-warning-700',   dot: 'bg-warning-500' },
-  payment_confirmed:  { label: 'Paid',               bg: 'bg-secondary-100', text: 'text-secondary-700', dot: 'bg-secondary-500' },
-  preparing:          { label: 'Preparing',           bg: 'bg-warning-50',    text: 'text-warning-700',   dot: 'bg-warning-400' },
+  pending_payment:      { label: 'Pending Payment',     variant: 'warning',     dot: 'bg-warning-600' },
+  payment_confirmed:    { label: 'Paid',                variant: 'success',     dot: 'bg-success-600' },
+  preparing:            { label: 'Preparing',           variant: 'warning',     dot: 'bg-warning-600' },
 
   // Curexa order statuses
-  new:                { label: 'Order Received',      bg: 'bg-primary-50',    text: 'text-primary-700',   dot: 'bg-primary-400' },
-  processing:         { label: 'Processing',          bg: 'bg-warning-100',   text: 'text-warning-700',   dot: 'bg-warning-500' },
-  payment_required:   { label: 'Payment Required',    bg: 'bg-error-100',     text: 'text-error-700',     dot: 'bg-error-400' },
-  in_progress:        { label: 'Being Filled',        bg: 'bg-warning-50',    text: 'text-warning-700',   dot: 'bg-warning-400' },
-  out_for_delivery:   { label: 'Out for Delivery',    bg: 'bg-primary-100',   text: 'text-primary-700',   dot: 'bg-primary-500' },
-  error:              { label: 'Error',               bg: 'bg-error-100',     text: 'text-error-700',     dot: 'bg-error-500' },
+  new:                  { label: 'Order Received',      variant: 'default',     dot: 'bg-primary-400' },
+  processing:           { label: 'Processing',          variant: 'warning',     dot: 'bg-warning-600' },
+  payment_required:     { label: 'Payment Required',    variant: 'destructive', dot: 'bg-error-600' },
+  in_progress:          { label: 'Being Filled',        variant: 'warning',     dot: 'bg-warning-600' },
+  out_for_delivery:     { label: 'Out for Delivery',    variant: 'default',     dot: 'bg-primary' },
+  error:                { label: 'Error',               variant: 'destructive', dot: 'bg-error-600' },
 }
 
 export function StatusBadge({ status, className }: { status: Status; className?: string }) {
   const config = statusConfig[status] ?? {
     label: status.replace(/_/g, ' '),
-    bg: 'bg-muted/10',
-    text: 'text-muted-foreground',
+    variant: 'outline' as const,
     dot: 'bg-muted-foreground',
   }
+
   return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap',
-        config.bg,
-        config.text,
-        className
-      )}
-    >
+    <Badge variant={config.variant} className={cn('gap-1.5 whitespace-nowrap', className)}>
       <span aria-hidden className={cn('h-1.5 w-1.5 shrink-0 rounded-full', config.dot)} />
       {config.label}
-    </span>
+    </Badge>
   )
 }

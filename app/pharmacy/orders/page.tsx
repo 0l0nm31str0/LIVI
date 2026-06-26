@@ -5,6 +5,8 @@ import { ShoppingBag } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { PageHeader } from '@/components/app/PageHeader'
+import { AppCard } from '@/components/app/AppCard'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { MOCK_PHARMACIES } from '@/lib/mock-data'
 import type { Order } from '@/types'
@@ -21,12 +23,12 @@ export default function PharmacyOrdersPage() {
   }, [pharmacy])
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-foreground">Orders</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Patient medication orders to fulfill.</p>
-      </div>
-      <div className="card">
+    <div className="page-enter">
+      <PageHeader
+        title="Orders"
+        description="Patient medication orders to fulfill."
+      />
+      <AppCard noPadding>
         {orders.length === 0 ? (
           <div className="p-6"><EmptyState icon={ShoppingBag} title="No orders yet" description="Orders appear here once patients place them." /></div>
         ) : (
@@ -51,7 +53,7 @@ export default function PharmacyOrdersPage() {
                     <td className="px-6 py-4 capitalize text-muted-foreground">{order.payment_method.replace('_', ' ')}</td>
                     <td className="px-6 py-4"><StatusBadge status={order.status} /></td>
                     <td className="px-6 py-4">
-                      <Link href={`/pharmacy/orders/${order.id}`} className="text-xs font-medium text-primary-700 hover:underline">Manage</Link>
+                      <Link href={`/pharmacy/orders/${order.id}`} className="text-xs font-medium text-primary hover:underline">Manage</Link>
                     </td>
                   </tr>
                 ))}
@@ -59,7 +61,7 @@ export default function PharmacyOrdersPage() {
             </table>
           </div>
         )}
-      </div>
+      </AppCard>
     </div>
   )
 }

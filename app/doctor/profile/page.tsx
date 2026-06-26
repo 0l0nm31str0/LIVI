@@ -1,23 +1,27 @@
 'use client'
 import { useAuthStore } from '@/stores/auth-store'
 import { MOCK_DOCTORS } from '@/lib/mock-data'
-import { Stethoscope, Star } from 'lucide-react'
+import { PageHeader } from '@/components/app/PageHeader'
+import { AppCard } from '@/components/app/AppCard'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Star } from 'lucide-react'
 
 export default function DoctorProfilePage() {
   const user = useAuthStore((s) => s.user)
   const doc = MOCK_DOCTORS.find(d => d.id === user?.id)
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <h2 className="text-xl font-bold text-foreground">My Profile</h2>
+    <div className="max-w-2xl space-y-6 page-enter">
+      <PageHeader title="My profile" />
 
-      <div className="card">
-        <div className="card-header flex items-center gap-2"><Stethoscope className="h-4 w-4 text-primary-700" /><h3 className="text-sm font-semibold">Physician Info</h3></div>
-        <div className="card-body space-y-4">
+      <AppCard title="Physician info">
+        <div className="space-y-4">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-100 text-xl font-bold text-primary-700">
-              {user?.first_name?.[0]}{user?.last_name?.[0]}
-            </div>
+            <Avatar className="h-16 w-16">
+              <AvatarFallback className="bg-accent-light text-primary text-xl font-bold">
+                {user?.first_name?.[0]}{user?.last_name?.[0]}
+              </AvatarFallback>
+            </Avatar>
             <div>
               <h3 className="text-lg font-semibold text-foreground">Dr. {user?.first_name} {user?.last_name}</h3>
               <p className="text-sm text-muted-foreground">{doc?.specialty}</p>
@@ -35,7 +39,7 @@ export default function DoctorProfilePage() {
             <div className="col-span-2"><p className="text-xs text-muted-foreground">Bio</p><p>{doc?.bio}</p></div>
           </div>
         </div>
-      </div>
+      </AppCard>
     </div>
   )
 }

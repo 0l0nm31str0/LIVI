@@ -5,13 +5,20 @@ import { CheckCircle, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
 import { AlertBanner } from '@/components/shared/AlertBanner'
+import { toast } from '@/hooks/use-toast'
 import { StatusBadge } from '@/components/shared/StatusBadge'
+import { PageHeader } from '@/components/app/PageHeader'
+import { AppCard } from '@/components/app/AppCard'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { formatRelative } from '@/lib/utils'
 import type { Medication, Visit } from '@/types'
 
 export default function WritePrescriptionPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center py-16"><LoadingSpinner className="h-8 w-8 text-primary-700" /></div>}>
+    <Suspense fallback={<div className="flex justify-center py-16"><LoadingSpinner className="h-8 w-8 text-primary" /></div>}>
       <WritePrescriptionForm />
     </Suspense>
   )
@@ -111,17 +118,23 @@ function WritePrescriptionForm() {
     const d = await res.json()
     setLoading(false)
     if (d.success) {
+      toast({
+        title: 'Prescription sent!',
+        description: 'Submitted to Beluga. Curexa will be notified automatically.',
+      })
       setSuccess(true)
       setTimeout(() => router.push('/doctor/dashboard'), 2000)
     } else {
-      setError(d.error?.message ?? 'Failed to write prescription')
+      const message = d.error?.message ?? 'Failed to write prescription'
+      setError(message)
+      toast({ variant: 'destructive', title: 'Error', description: message })
     }
   }
 
   if (success) {
     return (
       <div className="flex flex-col items-center justify-center py-20">
-        <div className="rounded-full bg-secondary-100 p-4 mb-4"><CheckCircle className="h-10 w-10 text-secondary-600" /></div>
+        <div className="rounded-full bg-accent-light p-4 mb-4"><CheckCircle className="h-10 w-10 text-primary" /></div>
         <h2 className="text-xl font-bold text-foreground mb-1">Prescription sent!</h2>
         <p className="text-sm text-muted-foreground">The prescription has been submitted to Beluga. Curexa will be notified automatically.</p>
       </div>
@@ -129,17 +142,18 @@ function WritePrescriptionForm() {
   }
 
   return (
-    <div className="max-w-xl">
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-foreground">Write Prescription</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Submit a digital prescription via Beluga Health. Curexa Pharmacy will be notified automatically.</p>
-      </div>
+    <div className="max-w-xl page-enter">
+      <PageHeader
+        title="Write prescription"
+        description="Submit a digital prescription via Beluga Health. Curexa Pharmacy will be notified automatically."
+      />
 
-      <form onSubmit={handleSubmit} className="card p-6 space-y-5">
+      <AppCard>
+      <form onSubmit={handleSubmit} className="space-y-5">
 
         {/* Visit selector */}
         <div>
-          <label className="form-label">Patient Visit</label>
+          <Label className="mb-1.5 block">Patient Visit</Label>
           {visits.length === 0 ? (
             <div className="rounded-xl border-2 border-dashed border-[color:var(--input)] p-4 text-center">
               <AlertCircle className="h-5 w-5 text-muted-foreground/50 mx-auto mb-1" />
@@ -152,10 +166,10 @@ function WritePrescriptionForm() {
                   key={v.id}
                   type="button"
                   onClick={() => { setSelectedVisit(v); setVisitId(v.beluga_master_id ?? '') }}
-                  className={`w-full text-left rounded-xl border-2 p-4 transition-colors ${
+                  className={`w-full text-left rounded-xl border p-4 transition-colors ${
                     selectedVisit?.id === v.id
-                      ? 'border-primary-600 bg-primary-50'
-                      : 'border-[color:var(--input)] hover:border-primary-200'
+                      ? 'border-primary bg-accent-light'
+                      : 'border-border hover:border-primary/30'
                   }`}
                 >
                   <div className="flex items-center justify-between">
@@ -175,9 +189,9 @@ function WritePrescriptionForm() {
 
           {/* Manual visit ID override */}
           <div className="mt-3">
-            <label className="form-label text-xs text-muted-foreground">Or enter Beluga Master ID manually</label>
-            <input
-              className="form-input text-sm"
+            <Label className="mb-1.5 block text-xs text-muted-foreground">Or enter Beluga Master ID manually</Label>
+            <Input
+              className="text-sm"
               placeholder="master-id-uuid"
               value={visitId}
               onChange={e => { setVisitId(e.target.value); setSelectedVisit(null) }}
@@ -187,19 +201,18 @@ function WritePrescriptionForm() {
 
         {/* Medication search */}
         <div className="relative">
-          <label className="form-label">Medication</label>
-          <input
-            className="form-input"
+          <Label className="mb-1.5 block">Medication</Label>
+          <Input
             placeholder="Search medications..."
             value={medSearch}
             onChange={e => { setMedSearch(e.target.value); setSelectedMed(null); setAllergyWarning('') }}
             required
           />
           {medications.length > 0 && (
-            <div className="absolute z-10 mt-1 w-full rounded-xl border shadow-card-hover" style={{ background: 'var(--card)', borderColor: 'var(--border)' }}>
+            <div className="absolute z-10 mt-1 w-full rounded-xl border border-border bg-card shadow-soft">
               {medications.map(m => (
                 <button type="button" key={m.id} onClick={() => selectMed(m)}
-                  className="flex w-full items-center justify-between px-4 py-2.5 text-sm hover:bg-primary-50 first:rounded-t-xl last:rounded-b-xl">
+                  className="flex w-full items-center justify-between px-4 py-2.5 text-sm hover:bg-accent-light first:rounded-t-xl last:rounded-b-xl">
                   <span className="font-medium text-foreground">{m.name} {m.strength}</span>
                   <span className="text-xs text-muted-foreground capitalize">{m.form}</span>
                 </button>
@@ -212,34 +225,35 @@ function WritePrescriptionForm() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="form-label">Dosage</label>
-            <input className="form-input" placeholder="e.g. 10mg" value={dosage} onChange={e => setDosage(e.target.value)} required />
+            <Label className="mb-1.5 block">Dosage</Label>
+            <Input placeholder="e.g. 10mg" value={dosage} onChange={e => setDosage(e.target.value)} required />
           </div>
           <div>
-            <label className="form-label">Quantity</label>
-            <input type="number" className="form-input" min={1} value={quantity} onChange={e => setQuantity(+e.target.value)} required />
+            <Label className="mb-1.5 block">Quantity</Label>
+            <Input type="number" min={1} value={quantity} onChange={e => setQuantity(+e.target.value)} required />
           </div>
           <div>
-            <label className="form-label">Refills (max 11)</label>
-            <input type="number" className="form-input" min={0} max={11} value={refills} onChange={e => setRefills(+e.target.value)} />
+            <Label className="mb-1.5 block">Refills (max 11)</Label>
+            <Input type="number" min={0} max={11} value={refills} onChange={e => setRefills(+e.target.value)} />
           </div>
           <div>
-            <label className="form-label">Days Supply</label>
-            <input type="number" className="form-input" min={1} max={365} value={daysSupply} onChange={e => setDaysSupply(+e.target.value)} />
+            <Label className="mb-1.5 block">Days Supply</Label>
+            <Input type="number" min={1} max={365} value={daysSupply} onChange={e => setDaysSupply(+e.target.value)} />
           </div>
         </div>
 
         <div>
-          <label className="form-label">Special Instructions</label>
-          <textarea className="form-textarea" rows={3} placeholder="e.g. Take with food, avoid alcohol..." value={instructions} onChange={e => setInstructions(e.target.value)} />
+          <Label className="mb-1.5 block">Special Instructions</Label>
+          <Textarea rows={3} placeholder="e.g. Take with food, avoid alcohol..." value={instructions} onChange={e => setInstructions(e.target.value)} />
         </div>
 
         {error && <AlertBanner variant="error" title="Error" message={error} />}
 
-        <button type="submit" disabled={loading || !selectedMed || !dosage || (!visitId && !selectedVisit)} className="btn-primary w-full justify-center py-2.5">
-          {loading ? <LoadingSpinner className="text-white" /> : 'Submit Prescription via Beluga'}
-        </button>
+        <Button type="submit" disabled={loading || !selectedMed || !dosage || (!visitId && !selectedVisit)} className="w-full">
+          {loading ? <LoadingSpinner className="text-white" /> : 'Submit prescription via Beluga'}
+        </Button>
       </form>
+      </AppCard>
     </div>
   )
 }

@@ -5,6 +5,9 @@ import { Video, CheckCircle, Calendar } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { PageHeader } from '@/components/app/PageHeader'
+import { AppCard } from '@/components/app/AppCard'
+import { Button } from '@/components/ui/button'
 import { formatDateTime } from '@/lib/utils'
 import { MOCK_USERS } from '@/lib/mock-data'
 import type { Appointment } from '@/types'
@@ -39,12 +42,12 @@ export default function DoctorAppointmentsPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-foreground">Appointments</h2>
-        <p className="mt-1 text-sm text-muted-foreground">All scheduled and past patient appointments.</p>
-      </div>
-      <div className="card">
+    <div className="page-enter">
+      <PageHeader
+        title="Appointments"
+        description="All scheduled and past patient appointments."
+      />
+      <AppCard noPadding>
         {appointments.length === 0 ? (
           <div className="p-6"><EmptyState icon={Calendar} title="No appointments" description="Your schedule is clear." /></div>
         ) : (
@@ -70,15 +73,17 @@ export default function DoctorAppointmentsPage() {
                       <div className="flex items-center gap-2">
                         {apt.status === 'scheduled' && (
                           <>
-                            <a href={apt.zoom_link} target="_blank" rel="noreferrer" className="btn-accent text-xs py-1 px-2">
-                              <Video className="h-3.5 w-3.5" /> Join
+                            <a href={apt.zoom_link} target="_blank" rel="noreferrer">
+                              <Button size="sm" variant="secondary">
+                                <Video className="h-3.5 w-3.5" /> Join
+                              </Button>
                             </a>
-                            <button onClick={() => markComplete(apt.id)} disabled={completing === apt.id} className="btn-secondary text-xs py-1 px-2">
+                            <Button size="sm" variant="secondary" onClick={() => markComplete(apt.id)} disabled={completing === apt.id}>
                               <CheckCircle className="h-3.5 w-3.5" /> Complete
-                            </button>
+                            </Button>
                           </>
                         )}
-                        <Link href={`/doctor/appointments/${apt.id}`} className="text-xs font-medium text-primary-700 hover:underline">Details</Link>
+                        <Link href={`/doctor/appointments/${apt.id}`} className="text-xs font-medium text-primary hover:underline">Details</Link>
                       </div>
                     </td>
                   </tr>
@@ -87,7 +92,7 @@ export default function DoctorAppointmentsPage() {
             </table>
           </div>
         )}
-      </div>
+      </AppCard>
     </div>
   )
 }

@@ -5,6 +5,9 @@ import { FileText, ShoppingBag, CheckCircle, ArrowRight } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { StatCard } from '@/components/shared/StatCard'
 import { StatusBadge } from '@/components/shared/StatusBadge'
+import { PageHeader } from '@/components/app/PageHeader'
+import { AppCard } from '@/components/app/AppCard'
+import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils'
 import { MOCK_PHARMACIES } from '@/lib/mock-data'
 import type { Prescription, Order } from '@/types'
@@ -33,32 +36,39 @@ export default function PharmacyDashboard() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-foreground">{pharmacy?.name ?? 'Pharmacy Dashboard'}</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Manage incoming prescriptions and patient orders.</p>
-      </div>
+      <PageHeader
+        title={pharmacy?.name ?? 'Pharmacy dashboard'}
+        description="Manage incoming prescriptions and patient orders."
+      />
 
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard title="Incoming Prescriptions" value={pending.length} icon={FileText} />
-        <StatCard title="Pending Orders" value={pendingOrders.length} icon={ShoppingBag} iconColor="text-warning-700" iconBg="bg-warning-50" />
-        <StatCard title="Fulfilled" value={fulfilledToday.length} icon={CheckCircle} iconColor="text-secondary-600" iconBg="bg-secondary-50" />
+        <StatCard title="Incoming Rx" value={pending.length} icon={FileText} />
+        <StatCard title="Pending orders" value={pendingOrders.length} icon={ShoppingBag} />
+        <StatCard title="Fulfilled" value={fulfilledToday.length} icon={CheckCircle} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="card">
-          <div className="card-header flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Incoming Prescriptions</h3>
-            <Link href="/pharmacy/prescriptions" className="text-xs font-medium text-primary-700 hover:underline flex items-center gap-1">
-              View all <ArrowRight className="h-3 w-3" />
+        <AppCard
+          title="Incoming prescriptions"
+          action={
+            <Link href="/pharmacy/prescriptions">
+              <Button variant="ghost" size="sm">
+                View all <ArrowRight className="h-3 w-3" />
+              </Button>
             </Link>
-          </div>
-          <div className="card-body divide-y divide-border">
+          }
+          noPadding
+        >
+          <div className="divide-y divide-border">
             {prescriptions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No prescriptions in queue.</p>
+              <p className="px-6 py-6 text-sm text-muted-foreground">No prescriptions in queue.</p>
             ) : (
-              prescriptions.slice(0, 4).map(rx => (
-                <Link key={rx.id} href={`/pharmacy/prescriptions/${rx.id}`}
-                  className="flex items-center justify-between py-3 first:pt-0 last:pb-0 hover:bg-primary-50 -mx-2 px-2 rounded transition-colors">
+              prescriptions.slice(0, 4).map((rx) => (
+                <Link
+                  key={rx.id}
+                  href={`/pharmacy/prescriptions/${rx.id}`}
+                  className="table-row-hover flex items-center justify-between px-6 py-3"
+                >
                   <div>
                     <p className="text-sm font-medium text-foreground">{MED_NAMES[rx.medication_id] ?? rx.medication_id}</p>
                     <p className="text-xs text-muted-foreground">{rx.dosage} x {rx.quantity} — {formatDate(rx.prescribed_date)}</p>
@@ -68,22 +78,29 @@ export default function PharmacyDashboard() {
               ))
             )}
           </div>
-        </div>
+        </AppCard>
 
-        <div className="card">
-          <div className="card-header flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-foreground">Active Orders</h3>
-            <Link href="/pharmacy/orders" className="text-xs font-medium text-primary-700 hover:underline flex items-center gap-1">
-              View all <ArrowRight className="h-3 w-3" />
+        <AppCard
+          title="Active orders"
+          action={
+            <Link href="/pharmacy/orders">
+              <Button variant="ghost" size="sm">
+                View all <ArrowRight className="h-3 w-3" />
+              </Button>
             </Link>
-          </div>
-          <div className="card-body divide-y divide-border">
+          }
+          noPadding
+        >
+          <div className="divide-y divide-border">
             {orders.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No orders yet.</p>
+              <p className="px-6 py-6 text-sm text-muted-foreground">No orders yet.</p>
             ) : (
-              orders.slice(0, 4).map(order => (
-                <Link key={order.id} href={`/pharmacy/orders/${order.id}`}
-                  className="flex items-center justify-between py-3 first:pt-0 last:pb-0 hover:bg-primary-50 -mx-2 px-2 rounded transition-colors">
+              orders.slice(0, 4).map((order) => (
+                <Link
+                  key={order.id}
+                  href={`/pharmacy/orders/${order.id}`}
+                  className="table-row-hover flex items-center justify-between px-6 py-3"
+                >
                   <div>
                     <p className="font-mono text-xs text-muted-foreground">{order.id}</p>
                     <p className="text-sm font-medium text-foreground">${order.total_amount.toFixed(2)}</p>
@@ -93,7 +110,7 @@ export default function PharmacyDashboard() {
               ))
             )}
           </div>
-        </div>
+        </AppCard>
       </div>
     </div>
   )

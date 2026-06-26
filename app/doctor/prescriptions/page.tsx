@@ -5,6 +5,9 @@ import { FileText } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { PageHeader } from '@/components/app/PageHeader'
+import { AppCard } from '@/components/app/AppCard'
+import { Button } from '@/components/ui/button'
 import { formatDate } from '@/lib/utils'
 import { MOCK_USERS } from '@/lib/mock-data'
 import type { Prescription } from '@/types'
@@ -29,19 +32,21 @@ export default function DoctorPrescriptionsPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-foreground">My Prescriptions</h2>
-          <p className="mt-1 text-sm text-muted-foreground">All prescriptions you have written.</p>
-        </div>
-        <Link href="/doctor/prescriptions/new" className="btn-primary">
-          <FileText className="h-4 w-4" /> Write New Rx
-        </Link>
-      </div>
-      <div className="card">
+    <div className="page-enter">
+      <PageHeader
+        title="My prescriptions"
+        description="All prescriptions you have written."
+        action={
+          <Link href="/doctor/prescriptions/new">
+            <Button>
+              <FileText className="h-4 w-4" /> Write new Rx
+            </Button>
+          </Link>
+        }
+      />
+      <AppCard noPadding>
         {prescriptions.length === 0 ? (
-          <div className="p-6"><EmptyState icon={FileText} title="No prescriptions yet" description="Use 'Write New Rx' to create the first one." /></div>
+          <div className="p-6"><EmptyState icon={FileText} title="No prescriptions yet" description="Use 'Write new Rx' to create the first one." /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -70,7 +75,7 @@ export default function DoctorPrescriptionsPage() {
             </table>
           </div>
         )}
-      </div>
+      </AppCard>
     </div>
   )
 }

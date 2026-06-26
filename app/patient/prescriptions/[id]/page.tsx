@@ -5,7 +5,20 @@ import { Package, MapPin, CreditCard } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { AlertBanner } from '@/components/shared/AlertBanner'
+import { toast } from '@/hooks/use-toast'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
+import { PageHeader } from '@/components/app/PageHeader'
+import { AppCard } from '@/components/app/AppCard'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import type { Prescription, Pharmacy } from '@/types'
 
@@ -67,91 +80,96 @@ export default function PrescriptionDetailPage() {
     })
     const d = await res.json()
     if (d.success) {
+      toast({
+        title: 'Order placed successfully!',
+        description: 'Redirecting to your orders…',
+      })
       setOrderSuccess(true)
       setTimeout(() => router.push('/patient/orders'), 2000)
+    } else {
+      const message = d.error?.message ?? 'Failed to place order. Please try again.'
+      toast({ variant: 'destructive', title: 'Order failed', description: message })
     }
     setOrderLoading(false)
   }
 
-  if (!rx) return <div className="flex justify-center py-16"><LoadingSpinner className="h-8 w-8 text-primary-700" /></div>
+  if (!rx) return <div className="flex justify-center py-16"><LoadingSpinner className="h-8 w-8 text-primary" /></div>
 
   const canOrder = rx.status === 'pharmacy_confirmed' && rx.pharmacy_id
   const canSelectPharmacy = rx.status === 'pending' || rx.status === 'sent_to_pharmacy'
 
   return (
-    <div className="max-w-2xl">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-bold text-foreground">Prescription Details</h2>
-          <p className="mt-1 font-mono text-xs text-muted-foreground">{rx.id}</p>
-        </div>
-        <StatusBadge status={rx.status} />
-      </div>
+    <div className="max-w-2xl page-enter">
+      <PageHeader
+        title="Prescription details"
+        description={rx.id}
+        action={<StatusBadge status={rx.status} />}
+      />
 
-      {orderSuccess && (
-        <AlertBanner variant="success" title="Order placed successfully!" message="Redirecting to your orders..." className="mb-4" />
-      )}
-
-      <div className="card mb-4">
-        <div className="card-header"><h3 className="text-sm font-semibold text-foreground">Medication</h3></div>
-        <div className="card-body space-y-3">
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div><p className="text-muted-foreground text-xs">Medication</p><p className="font-medium text-foreground">{MED_NAMES[rx.medication_id] ?? rx.medication_id}</p></div>
-            <div><p className="text-muted-foreground text-xs">Dosage</p><p className="font-medium text-foreground">{rx.dosage}</p></div>
-            <div><p className="text-muted-foreground text-xs">Quantity</p><p className="font-medium text-foreground">{rx.quantity} tablets</p></div>
-            <div><p className="text-muted-foreground text-xs">Refills</p><p className="font-medium text-foreground">{rx.refills}</p></div>
-            <div className="col-span-2"><p className="text-muted-foreground text-xs">Instructions</p><p className="font-medium text-foreground">{rx.special_instructions}</p></div>
-            <div><p className="text-muted-foreground text-xs">Prescribed</p><p className="font-medium text-foreground">{formatDate(rx.prescribed_date)}</p></div>
-          </div>
+      <AppCard title="Medication" className="mb-4">
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div><p className="text-muted-foreground text-xs">Medication</p><p className="font-medium text-foreground">{MED_NAMES[rx.medication_id] ?? rx.medication_id}</p></div>
+          <div><p className="text-muted-foreground text-xs">Dosage</p><p className="font-medium text-foreground">{rx.dosage}</p></div>
+          <div><p className="text-muted-foreground text-xs">Quantity</p><p className="font-medium text-foreground">{rx.quantity} tablets</p></div>
+          <div><p className="text-muted-foreground text-xs">Refills</p><p className="font-medium text-foreground">{rx.refills}</p></div>
+          <div className="col-span-2"><p className="text-muted-foreground text-xs">Instructions</p><p className="font-medium text-foreground">{rx.special_instructions}</p></div>
+          <div><p className="text-muted-foreground text-xs">Prescribed</p><p className="font-medium text-foreground">{formatDate(rx.prescribed_date)}</p></div>
         </div>
-      </div>
+      </AppCard>
 
       {canSelectPharmacy && (
-        <div className="card mb-4">
-          <div className="card-header"><h3 className="text-sm font-semibold text-foreground">Select Pharmacy</h3></div>
-          <div className="card-body space-y-3">
+        <AppCard title="Select pharmacy" className="mb-4">
+          <div className="space-y-3">
             <div>
-              <label className="form-label">Choose a pharmacy</label>
-              <select className="form-select" value={selectedPharmacyId} onChange={e => setSelectedPharmacyId(e.target.value)}>
-                <option value="">Select pharmacy...</option>
-                {pharmacies.map(p => (
-                  <option key={p.id} value={p.id}>{p.name} - {p.city}, {p.state}</option>
-                ))}
-              </select>
+              <Label className="mb-1.5 block">Choose a pharmacy</Label>
+              <Select value={selectedPharmacyId || undefined} onValueChange={setSelectedPharmacyId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select pharmacy..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {pharmacies.map(p => (
+                    <SelectItem key={p.id} value={p.id}>{p.name} - {p.city}, {p.state}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <button onClick={handleSelectPharmacy} disabled={!selectedPharmacyId || pharmacySaving} className="btn-primary">
-              {pharmacySaving ? <LoadingSpinner className="text-white" /> : <><MapPin className="h-4 w-4" /> Send to Pharmacy</>}
-            </button>
+            <Button onClick={handleSelectPharmacy} disabled={!selectedPharmacyId || pharmacySaving}>
+              {pharmacySaving ? <LoadingSpinner className="text-white" /> : <><MapPin className="h-4 w-4" /> Send to pharmacy</>}
+            </Button>
           </div>
-        </div>
+        </AppCard>
       )}
 
       {canOrder && (
-        <div className="card mb-4">
-          <div className="card-header"><h3 className="text-sm font-semibold text-foreground">Place Order</h3></div>
-          <div className="card-body space-y-4">
+        <AppCard title="Place order" className="mb-4">
+          <div className="space-y-4">
             <AlertBanner variant="success" title="Pharmacy has confirmed availability" message="Your medication is ready to order." />
             <div>
-              <label className="form-label"><MapPin className="inline h-3.5 w-3.5 mr-1" />Shipping Address</label>
-              <input className="form-input" value={shippingAddress} onChange={e => setShippingAddress(e.target.value)} />
+              <Label className="mb-1.5 block"><MapPin className="inline h-3.5 w-3.5 mr-1" />Shipping address</Label>
+              <Input value={shippingAddress} onChange={e => setShippingAddress(e.target.value)} />
             </div>
             <div>
-              <label className="form-label"><CreditCard className="inline h-3.5 w-3.5 mr-1" />Payment Method</label>
-              <select className="form-select" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
-                <option value="credit_card">Credit Card</option>
-                <option value="debit_card">Debit Card</option>
-                <option value="insurance">Insurance</option>
-              </select>
+              <Label className="mb-1.5 block"><CreditCard className="inline h-3.5 w-3.5 mr-1" />Payment method</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="credit_card">Credit Card</SelectItem>
+                  <SelectItem value="debit_card">Debit Card</SelectItem>
+                  <SelectItem value="insurance">Insurance</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex items-center justify-between rounded-lg bg-primary-50 p-3 text-sm">
+            <div className="flex items-center justify-between rounded-lg bg-accent-light p-3 text-sm">
               <span className="text-muted-foreground">Total amount</span>
               <span className="font-semibold text-foreground">{formatCurrency(19.99)}</span>
             </div>
-            <button onClick={handlePlaceOrder} disabled={orderLoading || orderSuccess} className="btn-primary w-full justify-center py-2.5">
-              {orderLoading ? <LoadingSpinner className="text-white" /> : <><Package className="h-4 w-4" /> Place Order</>}
-            </button>
+            <Button onClick={handlePlaceOrder} disabled={orderLoading || orderSuccess} className="w-full">
+              {orderLoading ? <LoadingSpinner className="text-white" /> : <><Package className="h-4 w-4" /> Place order</>}
+            </Button>
           </div>
-        </div>
+        </AppCard>
       )}
 
       {rx.status === 'fulfilled' && (

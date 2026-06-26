@@ -2,24 +2,30 @@
 import Link from 'next/link'
 import { Star, Calendar } from 'lucide-react'
 import { MOCK_DOCTORS } from '@/lib/mock-data'
+import { PageHeader } from '@/components/app/PageHeader'
+import { AppCard } from '@/components/app/AppCard'
+import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 export default function BrowseDoctorsPage() {
   const doctors = MOCK_DOCTORS
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-foreground">Find a Doctor</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Browse licensed physicians available for telemedicine consultations.</p>
-      </div>
+    <div className="page-enter">
+      <PageHeader
+        title="Find a doctor"
+        description="Browse licensed physicians available for telemedicine consultations."
+      />
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {doctors.map(doc => (
-          <div key={doc.id} className="card p-5">
+        {doctors.map((doc, i) => (
+          <AppCard key={doc.id} >
             <div className="flex items-start gap-3 mb-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary-100 text-base font-bold text-primary-700">
-                {doc.first_name[0]}{doc.last_name[0]}
-              </div>
+              <Avatar className="h-12 w-12">
+                <AvatarFallback className="bg-accent-light text-primary font-semibold">
+                  {doc.first_name[0]}{doc.last_name[0]}
+                </AvatarFallback>
+              </Avatar>
               <div>
                 <h3 className="font-semibold text-foreground">Dr. {doc.first_name} {doc.last_name}</h3>
                 <p className="text-xs text-muted-foreground">{doc.specialty}</p>
@@ -31,15 +37,17 @@ export default function BrowseDoctorsPage() {
             </div>
             <p className="text-xs text-muted-foreground mb-4 line-clamp-2">{doc.bio}</p>
             <div className="flex items-center justify-between">
-              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${doc.available ? 'bg-secondary-100 text-secondary-700' : 'bg-muted/10 text-muted-foreground'}`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${doc.available ? 'bg-secondary-500' : 'bg-muted'}`} />
+              <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${doc.available ? 'bg-accent-light text-primary-700' : 'bg-muted/10 text-muted-foreground'}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${doc.available ? 'bg-primary' : 'bg-muted'}`} />
                 {doc.available ? 'Available today' : 'Unavailable'}
               </span>
-              <Link href="/patient/appointments/new" className="btn-primary text-xs px-3 py-1.5">
-                <Calendar className="h-3.5 w-3.5" /> Book
+              <Link href="/patient/appointments/new">
+                <Button size="sm">
+                  <Calendar className="h-3.5 w-3.5" /> Book
+                </Button>
               </Link>
             </div>
-          </div>
+          </AppCard>
         ))}
       </div>
     </div>

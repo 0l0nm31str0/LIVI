@@ -1,13 +1,15 @@
 'use client'
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Send, Truck, Video, AlertCircle, CheckCircle, Package, MessageSquare } from 'lucide-react'
+import { ArrowLeft, Send, Truck, Video, AlertCircle, CheckCircle, MessageSquare } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner'
-import { formatDateTime, formatDate, formatRelative } from '@/lib/utils'
+import { AppCard } from '@/components/app/AppCard'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { formatDate, formatRelative } from '@/lib/utils'
 import type { Visit, VisitMessage } from '@/types'
-import { VISIT_STATUS_LABEL, CUREXA_STATUS_LABEL } from '@/types'
 
 export default function VisitDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -60,7 +62,7 @@ export default function VisitDetailPage() {
   }
 
   if (loading) {
-    return <div className="flex justify-center py-20"><LoadingSpinner className="h-8 w-8 text-primary-600" /></div>
+    return <div className="flex justify-center py-20"><LoadingSpinner className="h-8 w-8 text-primary" /></div>
   }
 
   if (!visit) {
@@ -68,7 +70,7 @@ export default function VisitDetailPage() {
       <div className="text-center py-20">
         <AlertCircle className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
         <p className="font-medium text-foreground">Visit not found</p>
-        <button onClick={() => router.back()} className="btn-secondary mt-4">Go Back</button>
+        <Button variant="secondary" className="mt-4" onClick={() => router.back()}>Go back</Button>
       </div>
     )
   }
@@ -78,7 +80,7 @@ export default function VisitDetailPage() {
   const showPharmacyTab = hasOrder
 
   return (
-    <div className="max-w-3xl">
+    <div className="max-w-3xl page-enter">
       {/* Back */}
       <button onClick={() => router.back()} className="mb-5 flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
         <ArrowLeft className="h-4 w-4" /> Back to Dashboard
@@ -103,29 +105,26 @@ export default function VisitDetailPage() {
 
       {/* Video link for sync visits */}
       {visit.visit_type === 'sync' && visit.zoom_link && (
-        <div className="card p-4 mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50">
-              <Video className="h-5 w-5 text-primary-600" />
+        <AppCard className="mb-6">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent-light">
+                <Video className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-foreground">Video consultation link</p>
+                <p className="text-xs text-muted-foreground">Join when your doctor is ready</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">Video Consultation Link</p>
-              <p className="text-xs text-muted-foreground">Join when your doctor is ready</p>
-            </div>
+            <a href={visit.zoom_link} target="_blank" rel="noreferrer">
+              <Button size="sm">Join call</Button>
+            </a>
           </div>
-          <a href={visit.zoom_link} target="_blank" rel="noreferrer" className="btn-primary text-sm">
-            Join Call
-          </a>
-        </div>
+        </AppCard>
       )}
 
-      {/* Prescription */}
       {rx && (
-        <div className="card p-5 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Package className="h-5 w-5 text-secondary-600" />
-            <h3 className="text-sm font-semibold text-foreground">Prescription</h3>
-          </div>
+        <AppCard title="Prescription" className="mb-6">
           <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
             <RxRow label="Medication" value={(rx.medication_name as string) ?? '—'} />
             <RxRow label="Dosage" value={(rx.dosage as string) ?? '—'} />
@@ -134,17 +133,11 @@ export default function VisitDetailPage() {
             <RxRow label="Days Supply" value={String(rx.days_supply ?? '—')} />
             {rx.special_instructions && <RxRow label="Instructions" value={rx.special_instructions as string} />}
           </div>
-        </div>
+        </AppCard>
       )}
 
-      {/* Tracking */}
       {hasOrder && (
-        <div className="card p-5 mb-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Truck className="h-5 w-5 text-primary-600" />
-            <h3 className="text-sm font-semibold text-foreground">Order & Tracking</h3>
-            {visit.curexa_order_status && <StatusBadge status={visit.curexa_order_status} />}
-          </div>
+        <AppCard title="Order & tracking" className="mb-6" action={visit.curexa_order_status ? <StatusBadge status={visit.curexa_order_status} /> : undefined}>
           <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
             <RxRow label="Order ID" value={visit.curexa_order_id ?? '—'} />
             {visit.tracking_number && <RxRow label="Tracking #" value={visit.tracking_number} />}
@@ -153,41 +146,33 @@ export default function VisitDetailPage() {
           </div>
           {visit.tracking_url && (
             <a href={visit.tracking_url} target="_blank" rel="noreferrer"
-              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary-700 hover:underline">
-              <Truck className="h-4 w-4" /> Track Package
+              className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline">
+              <Truck className="h-4 w-4" /> Track package
             </a>
           )}
-        </div>
+        </AppCard>
       )}
 
-      {/* Messaging */}
-      <div className="card">
-        <div className="card-header">
-          <div className="flex items-center gap-2">
-            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-            <h3 className="text-sm font-semibold text-foreground">Messages</h3>
-          </div>
-          {showPharmacyTab && (
-            <div className="flex rounded-lg border border-[color:var(--border)] overflow-hidden text-xs">
+      <AppCard title="Messages" noPadding action={
+        showPharmacyTab ? (
+            <div className="flex rounded-lg border border-border overflow-hidden text-xs">
               <button
                 onClick={() => setRecipient('doctor')}
                 className={`px-3 py-1.5 font-medium transition-colors ${
-                  recipient === 'doctor' ? 'bg-primary-600 text-white' : 'bg-transparent text-muted-foreground hover:text-foreground'
+                  recipient === 'doctor' ? 'bg-primary text-primary-foreground' : 'bg-transparent text-muted-foreground hover:text-foreground'
                 }`}>
                 Doctor
               </button>
               <button
                 onClick={() => setRecipient('pharmacy')}
                 className={`px-3 py-1.5 font-medium transition-colors ${
-                  recipient === 'pharmacy' ? 'bg-primary-600 text-white' : 'bg-transparent text-muted-foreground hover:text-foreground'
+                  recipient === 'pharmacy' ? 'bg-primary text-primary-foreground' : 'bg-transparent text-muted-foreground hover:text-foreground'
                 }`}>
                 Pharmacy
               </button>
             </div>
-          )}
-        </div>
-
-        {/* Message thread */}
+          ) : undefined
+      }>
         <div className="h-72 overflow-y-auto p-4 space-y-3">
           {messages.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center">
@@ -203,21 +188,20 @@ export default function VisitDetailPage() {
           <div ref={msgEndRef} />
         </div>
 
-        {/* Send */}
-        <div className="border-t border-[color:var(--border)] p-4">
+        <div className="border-t border-border p-4">
           <form onSubmit={sendMessage} className="flex gap-3">
-            <input
-              className="form-input flex-1"
+            <Input
+              className="flex-1"
               placeholder={recipient === 'doctor' ? 'Message your doctor…' : 'Message the pharmacy…'}
               value={messageText}
               onChange={e => setMessageText(e.target.value)}
             />
-            <button type="submit" disabled={sending || !messageText.trim()} className="btn-primary px-4">
+            <Button type="submit" disabled={sending || !messageText.trim()} size="icon">
               {sending ? <LoadingSpinner className="text-white" /> : <Send className="h-4 w-4" />}
-            </button>
+            </Button>
           </form>
         </div>
-      </div>
+      </AppCard>
     </div>
   )
 }
@@ -233,34 +217,33 @@ function VisitTimeline({ visit }: { visit: Visit }) {
   ]
 
   return (
-    <div className="card p-5 mb-6">
-      <h3 className="text-sm font-semibold text-foreground mb-4">Progress</h3>
+    <AppCard title="Progress" className="mb-6">
       <div className="flex items-center gap-0">
         {steps.map((step, i) => (
           <div key={step.status} className="flex items-center flex-1 last:flex-none">
             <div className="flex flex-col items-center">
               <div className={`flex h-8 w-8 items-center justify-center rounded-full border-2 text-xs font-semibold transition-colors ${
-                step.done ? 'border-secondary-500 bg-secondary-500 text-white' :
-                step.active ? 'border-primary-600 bg-primary-600 text-white' :
+                step.done ? 'border-primary bg-primary text-primary-foreground' :
+                step.active ? 'border-primary bg-primary text-primary-foreground' :
                 'border-border bg-card text-muted-foreground'
               }`}>
                 {step.done ? <CheckCircle className="h-4 w-4" /> : i + 1}
               </div>
               <p className={`mt-1.5 text-center text-[10px] leading-tight max-w-[60px] ${
-                step.active ? 'text-primary-700 font-semibold' :
-                step.done ? 'text-secondary-700' :
+                step.active ? 'text-primary font-semibold' :
+                step.done ? 'text-foreground' :
                 'text-muted-foreground'
               }`}>{step.label}</p>
             </div>
             {i < steps.length - 1 && (
               <div className={`h-0.5 flex-1 mx-1 mb-5 transition-colors ${
-                step.done ? 'bg-secondary-400' : 'bg-border'
+                step.done ? 'bg-primary/40' : 'bg-border'
               }`} />
             )}
           </div>
         ))}
       </div>
-    </div>
+    </AppCard>
   )
 }
 
@@ -268,7 +251,7 @@ function MessageBubble({ message, isOwn }: { message: VisitMessage; isOwn: boole
   return (
     <div className={`flex gap-3 ${ isOwn ? 'flex-row-reverse' : 'flex-row' }`}>
       <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-        isOwn ? 'bg-primary-600 text-white' :
+        isOwn ? 'bg-primary text-primary-foreground' :
         message.sender_type === 'doctor' ? 'bg-secondary-600 text-white' :
         message.sender_type === 'pharmacy' ? 'bg-warning-600 text-white' :
         'bg-muted/20 text-muted-foreground'
@@ -281,8 +264,8 @@ function MessageBubble({ message, isOwn }: { message: VisitMessage; isOwn: boole
         </p>
         <div className={`rounded-2xl px-4 py-2.5 text-sm ${
           isOwn
-            ? 'bg-primary-600 text-white rounded-tr-sm'
-            : 'bg-muted/10 text-foreground rounded-tl-sm border border-[color:var(--border)]'
+            ? 'bg-primary text-primary-foreground rounded-tr-sm'
+            : 'bg-muted/10 text-foreground rounded-tl-sm border border-border'
         }`}>
           {message.message}
         </div>

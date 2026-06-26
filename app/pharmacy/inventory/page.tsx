@@ -1,6 +1,7 @@
 'use client'
 import { MOCK_MEDICATIONS } from '@/lib/mock-data'
-// Package icon removed; no longer used after status badge refactor
+import { PageHeader } from '@/components/app/PageHeader'
+import { AppCard } from '@/components/app/AppCard'
 
 const MOCK_STOCK: Record<string, number> = {
   'med-001': 248, 'med-002': 512, 'med-003': 76, 'med-004': 35, 'med-005': 190, 'med-006': 320,
@@ -8,12 +9,12 @@ const MOCK_STOCK: Record<string, number> = {
 
 export default function PharmacyInventoryPage() {
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-foreground">Inventory</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Current stock levels. Mock data for MVP.</p>
-      </div>
-      <div className="card">
+    <div className="page-enter">
+      <PageHeader
+        title="Inventory"
+        description="Current stock levels. Mock data for MVP."
+      />
+      <AppCard noPadding>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -38,8 +39,8 @@ export default function PharmacyInventoryPage() {
                     <td className="px-6 py-4 capitalize text-muted-foreground">{med.form}</td>
                     <td className="px-6 py-4 font-mono text-xs text-muted-foreground">{med.ndc_code}</td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${low ? 'bg-error-100 text-error-700' : 'bg-secondary-100 text-secondary-700'}`}>
-                        <span className={`h-1.5 w-1.5 rounded-full ${low ? 'bg-error-500' : 'bg-secondary-500'}`} />
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${low ? 'bg-error-100 text-error-700' : 'bg-accent-light text-primary-700'}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${low ? 'bg-error-600' : 'bg-primary'}`} />
                         {stock} units{low ? ' — Low stock' : ''}
                       </span>
                     </td>
@@ -49,7 +50,7 @@ export default function PharmacyInventoryPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </AppCard>
     </div>
   )
 }

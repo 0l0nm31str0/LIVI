@@ -5,6 +5,8 @@ import { ShoppingBag } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { PageHeader } from '@/components/app/PageHeader'
+import { AppCard } from '@/components/app/AppCard'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import type { Order } from '@/types'
 
@@ -18,12 +20,12 @@ export default function PatientOrdersPage() {
   }, [user])
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-foreground">My Orders</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Track all your medication orders.</p>
-      </div>
-      <div className="card">
+    <div className="page-enter">
+      <PageHeader
+        title="My orders"
+        description="Track all your medication orders."
+      />
+      <AppCard noPadding>
         {orders.length === 0 ? (
           <div className="p-6">
             <EmptyState icon={ShoppingBag} title="No orders yet" description="Place your first order from a confirmed prescription." />
@@ -52,7 +54,7 @@ export default function PatientOrdersPage() {
                     <td className="px-6 py-4 font-mono text-xs text-muted-foreground">{order.tracking_number ?? 'Pending'}</td>
                     <td className="px-6 py-4"><StatusBadge status={order.status} /></td>
                     <td className="px-6 py-4">
-                      <Link href={`/patient/orders/${order.id}`} className="text-xs font-medium text-primary-700 hover:underline">View</Link>
+                      <Link href={`/patient/orders/${order.id}`} className="text-xs font-medium text-primary hover:underline">View</Link>
                     </td>
                   </tr>
                 ))}
@@ -60,7 +62,7 @@ export default function PatientOrdersPage() {
             </table>
           </div>
         )}
-      </div>
+      </AppCard>
     </div>
   )
 }

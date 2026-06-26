@@ -5,6 +5,8 @@ import { FileText } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { PageHeader } from '@/components/app/PageHeader'
+import { AppCard } from '@/components/app/AppCard'
 import { formatDate } from '@/lib/utils'
 import type { Prescription } from '@/types'
 
@@ -27,13 +29,13 @@ export default function PatientPrescriptionsPage() {
   }, [user])
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-foreground">My Prescriptions</h2>
-        <p className="mt-1 text-sm text-muted-foreground">View and manage all your prescriptions.</p>
-      </div>
+    <div className="page-enter">
+      <PageHeader
+        title="My prescriptions"
+        description="View and manage all your prescriptions."
+      />
 
-      <div className="card">
+      <AppCard noPadding>
         {prescriptions.length === 0 ? (
           <div className="p-6">
             <EmptyState icon={FileText} title="No prescriptions yet" description="After your consultation, your doctor will send prescriptions here." />
@@ -62,7 +64,7 @@ export default function PatientPrescriptionsPage() {
                     <td className="px-6 py-4 text-muted-foreground">{formatDate(rx.prescribed_date)}</td>
                     <td className="px-6 py-4"><StatusBadge status={rx.status} /></td>
                     <td className="px-6 py-4">
-                      <Link href={`/patient/prescriptions/${rx.id}`} className="text-xs font-medium text-primary-700 hover:underline">Details</Link>
+                      <Link href={`/patient/prescriptions/${rx.id}`} className="text-xs font-medium text-primary hover:underline">Details</Link>
                     </td>
                   </tr>
                 ))}
@@ -70,7 +72,7 @@ export default function PatientPrescriptionsPage() {
             </table>
           </div>
         )}
-      </div>
+      </AppCard>
     </div>
   )
 }

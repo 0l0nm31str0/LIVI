@@ -5,6 +5,8 @@ import { FileText } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { PageHeader } from '@/components/app/PageHeader'
+import { AppCard } from '@/components/app/AppCard'
 import { formatDate } from '@/lib/utils'
 import { MOCK_PHARMACIES } from '@/lib/mock-data'
 import type { Prescription } from '@/types'
@@ -26,12 +28,12 @@ export default function PharmacyPrescriptionsPage() {
   }, [pharmacy])
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-bold text-foreground">Incoming Prescriptions</h2>
-        <p className="mt-1 text-sm text-muted-foreground">Digital prescriptions routed to your pharmacy.</p>
-      </div>
-      <div className="card">
+    <div className="page-enter">
+      <PageHeader
+        title="Incoming prescriptions"
+        description="Digital prescriptions routed to your pharmacy."
+      />
+      <AppCard noPadding>
         {prescriptions.length === 0 ? (
           <div className="p-6"><EmptyState icon={FileText} title="No prescriptions" description="Prescriptions routed to your pharmacy will appear here." /></div>
         ) : (
@@ -58,7 +60,7 @@ export default function PharmacyPrescriptionsPage() {
                     <td className="px-6 py-4 text-muted-foreground">{formatDate(rx.prescribed_date)}</td>
                     <td className="px-6 py-4"><StatusBadge status={rx.status} /></td>
                     <td className="px-6 py-4">
-                      <Link href={`/pharmacy/prescriptions/${rx.id}`} className="text-xs font-medium text-primary-700 hover:underline">View</Link>
+                      <Link href={`/pharmacy/prescriptions/${rx.id}`} className="text-xs font-medium text-primary hover:underline">View</Link>
                     </td>
                   </tr>
                 ))}
@@ -66,7 +68,7 @@ export default function PharmacyPrescriptionsPage() {
             </table>
           </div>
         )}
-      </div>
+      </AppCard>
     </div>
   )
 }
