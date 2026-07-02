@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Instrument_Sans, Newsreader } from 'next/font/google'
+import { Instrument_Sans, Bricolage_Grotesque } from 'next/font/google'
 import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
 
@@ -10,7 +10,7 @@ const instrumentSans = Instrument_Sans({
   adjustFontFallback: false,
 })
 
-const newsreader = Newsreader({
+const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
   variable: '--font-display',
   display: 'swap',
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${instrumentSans.variable} ${newsreader.variable}`}>
+    <html lang="en" className={`${instrumentSans.variable} ${bricolage.variable}`}>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         {children}
         <Toaster />

@@ -72,7 +72,7 @@ export function LivingShowcase({ className, compact }: LivingShowcaseProps) {
   return (
     <div
       className={cn(
-        'rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm',
+        'deep-card rounded-2xl',
         compact ? 'max-w-xs p-3' : 'w-full max-w-md p-5',
         className
       )}
@@ -83,7 +83,7 @@ export function LivingShowcase({ className, compact }: LivingShowcaseProps) {
     >
       <div className="mb-4 flex items-center justify-between">
         <span className="text-xs font-medium text-on-ink-muted">Your visit</span>
-        <span className="rounded-full bg-accent-light/30 px-2 py-0.5 text-xs font-medium text-accent-light">
+        <span className="rounded-full bg-white/10 px-2 py-0.5 text-xs font-medium text-current-bright">
           {current.status}
         </span>
       </div>
@@ -98,8 +98,8 @@ export function LivingShowcase({ className, compact }: LivingShowcaseProps) {
           className="rounded-xl bg-white/10 p-4"
         >
           <div className="mb-3 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sage">
-              <current.icon className="h-5 w-5 text-white" strokeWidth={1.75} />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-current">
+              <current.icon className="h-5 w-5 text-[color:var(--deep)]" strokeWidth={2} />
             </div>
             <div>
               <p className="font-medium text-on-ink">{current.label}</p>
@@ -110,7 +110,7 @@ export function LivingShowcase({ className, compact }: LivingShowcaseProps) {
           {!reducedMotion && (
             <div className="h-1 overflow-hidden rounded-full bg-white/10">
               <motion.div
-                className="h-full w-full origin-left rounded-full bg-coral"
+                className="h-full w-full origin-left rounded-full bg-ember"
                 style={{ scaleX: progress }}
               />
             </div>
@@ -126,7 +126,7 @@ export function LivingShowcase({ className, compact }: LivingShowcaseProps) {
             onClick={() => setActiveIndex(i)}
             className={cn(
               'h-1 flex-1 rounded-full transition-colors',
-              i === activeIndex ? 'bg-coral' : 'bg-white/15'
+              i === activeIndex ? 'bg-ember' : 'bg-white/15'
             )}
             aria-label={`Show ${step.label}`}
           />

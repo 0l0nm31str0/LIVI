@@ -5,28 +5,45 @@
 @layer base {
   :root {
     color-scheme: light;
-    --ink: #0C0F12;
-    --canvas: #F6F3EE;
-    --background: #F6F3EE;
-    --foreground: #0C0F12;
+    /* Portal surfaces — cool near-white tinted toward the brand teal */
+    --ink: #0B1210;
+    --canvas: #F3F6F5;
+    --background: #F3F6F5;
+    --foreground: #0B1210;
     --surface: #FFFFFF;
     --card: #FFFFFF;
-    --card-foreground: #0C0F12;
-    --muted: #6B7280;
-    --muted-foreground: #6B7280;
-    --sage: #1A6B5C;
+    --card-foreground: #0B1210;
+    --muted: #5C6B66;
+    --muted-foreground: #5C6B66;
+    --sage: #17685A;
     --coral: #E85D4C;
-    --accent: #1A6B5C;
+    --accent: #17685A;
     --accent-foreground: #FFFFFF;
-    --accent-light: #E8F3F0;
-    --border: #E2DDD4;
-    --input: #E2DDD4;
-    --ring: #1A6B5C;
+    --accent-light: #E3F0EC;
+    --border: #DDE5E2;
+    --input: #DDE5E2;
+    --ring: #17685A;
     --destructive: #DC2626;
     --destructive-foreground: #FFFFFF;
     --radius: 0.625rem;
-    --on-ink: #FFFFFF;
-    --on-ink-muted: #9CA3AF;
+    --on-ink: #F2F7F5;
+    --on-ink-muted: #9DB1AA;
+
+    /* Deep water — marketing register */
+    --deep: #06100E;
+    --deep-2: #0A1A17;
+    --current: #2FB59A;
+    --current-bright: #83E3CB;
+    --ember: #FF8672;
+    --on-deep: #EAF4F0;
+    --on-deep-muted: #9FB5AD;
+
+    /* Semantic z-scale */
+    --z-nav: 40;
+    --z-modal-backdrop: 50;
+    --z-modal: 60;
+    --z-toast: 70;
+    --z-tooltip: 80;
   }
 
   * {
@@ -41,6 +58,7 @@
 
   h1, h2, h3 {
     @apply font-display tracking-tight text-foreground;
+    text-wrap: balance;
   }
 
   *:focus-visible {
@@ -52,6 +70,9 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+    }
+    html {
+      scroll-behavior: auto !important;
     }
   }
 }
@@ -65,13 +86,12 @@
 
   .sidebar-link-active {
     @apply relative flex min-h-[44px] items-center gap-3 rounded-lg px-3 py-2
-           bg-white/10 text-sm font-medium text-on-ink transition-colors duration-200;
+           text-sm font-semibold text-on-ink transition-colors duration-200;
+    background: linear-gradient(100deg, rgb(47 181 154 / 0.22), rgb(47 181 154 / 0.07));
   }
 
-  .sidebar-link-active::before {
-    content: '';
-    @apply absolute left-0 top-1/2 h-5 w-0.5 -translate-y-1/2 rounded-full;
-    background-color: var(--sage);
+  .sidebar-link-active > svg {
+    color: var(--current);
   }
 
   .page-enter {
@@ -83,12 +103,11 @@
   .stagger-3 { animation-delay: 90ms; }
 
   .table-row-hover {
-    @apply border-l-2 border-transparent transition-colors duration-150;
+    @apply transition-colors duration-150;
   }
 
   .table-row-hover:hover {
-    border-left-color: rgb(26 107 92 / 0.4);
-    background-color: rgb(246 243 238 / 0.8);
+    background-color: rgb(23 104 90 / 0.06);
   }
 
   .section-ink {
@@ -102,9 +121,9 @@
   .photo-overlay {
     background: linear-gradient(
       to right,
-      rgb(12 15 18 / 0.85) 0%,
-      rgb(12 15 18 / 0.55) 45%,
-      rgb(12 15 18 / 0.25) 100%
+      rgb(6 16 14 / 0.85) 0%,
+      rgb(6 16 14 / 0.55) 45%,
+      rgb(6 16 14 / 0.25) 100%
     );
   }
 
@@ -126,6 +145,15 @@
     grid-template-rows: 0fr;
     opacity: 0;
   }
+
+  /* Deep-water card: the only translucent surface vocabulary on marketing */
+  .deep-card {
+    background: rgb(255 255 255 / 0.05);
+    border: 1px solid rgb(255 255 255 / 0.12);
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.06) inset,
+      0 24px 48px -24px rgb(0 0 0 / 0.6);
+  }
 }
 
 @layer utilities {
@@ -139,16 +167,25 @@
 
   .bg-ink { background-color: var(--ink); }
   .bg-canvas { background-color: var(--canvas); }
+  .bg-deep { background-color: var(--deep); }
+  .bg-deep-2 { background-color: var(--deep-2); }
   .text-on-ink { color: var(--on-ink); }
   .text-on-ink-muted { color: var(--on-ink-muted); }
+  .text-on-deep { color: var(--on-deep); }
+  .text-on-deep-muted { color: var(--on-deep-muted); }
   .text-sage { color: var(--sage); }
   .text-coral { color: var(--coral); }
+  .text-current-bright { color: var(--current-bright); }
+  .text-brand-current { color: var(--current); }
+  .bg-brand-current { background-color: var(--current); }
+  .bg-ember { background-color: var(--ember); }
+  .text-ember { color: var(--ember); }
   .border-ink-border { border-color: rgb(255 255 255 / 0.1); }
 
   .shadow-elevated {
     box-shadow:
-      0 1px 2px rgb(12 15 18 / 0.04),
-      0 4px 16px -2px rgb(12 15 18 / 0.08);
+      0 1px 2px rgb(11 18 16 / 0.04),
+      0 4px 16px -2px rgb(11 18 16 / 0.08);
   }
 }
 

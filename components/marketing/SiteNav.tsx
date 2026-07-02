@@ -18,20 +18,22 @@ export function SiteNav() {
   return (
     <header
       className={cn(
-        'sticky top-0 z-40 transition-[background-color,box-shadow,border-color] duration-300',
+        'fixed inset-x-0 top-0 z-[var(--z-nav)] transition-[background-color,border-color,backdrop-filter] duration-300',
         scrolled
-          ? 'border-b border-white/10 bg-ink shadow-elevated'
+          ? 'border-b border-white/10 bg-deep/80 backdrop-blur-md'
           : 'border-b border-transparent bg-transparent'
       )}
     >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
         <Link
           href="/"
-          className={cn(
-            'font-display text-xl font-semibold tracking-tight transition-colors',
-            scrolled ? 'text-on-ink' : 'text-on-ink'
-          )}
+          className="flex items-center gap-2 font-display text-xl font-semibold tracking-tight text-on-deep"
         >
+          <span
+            className="h-2.5 w-2.5 rounded-full"
+            style={{ background: 'linear-gradient(135deg, var(--current-bright), var(--current))' }}
+            aria-hidden
+          />
           LIVI
         </Link>
         <nav className="flex items-center gap-2 sm:gap-3">
@@ -39,12 +41,12 @@ export function SiteNav() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-on-ink-muted hover:bg-white/10 hover:text-on-ink"
+              className="text-on-deep-muted hover:bg-white/10 hover:text-on-deep"
             >
               Sign in
             </Button>
           </Link>
-          <Link href="/login">
+          <Link href="/signup">
             <Button size="sm">Get started</Button>
           </Link>
         </nav>

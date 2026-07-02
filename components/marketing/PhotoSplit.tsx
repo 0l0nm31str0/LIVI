@@ -9,6 +9,7 @@ interface PhotoSplitProps {
   quote: string
   items: { title: string; description: string }[]
   imagePosition?: 'left' | 'right'
+  variant?: 'light' | 'deep'
   className?: string
 }
 
@@ -20,10 +21,18 @@ export function PhotoSplit({
   quote,
   items,
   imagePosition = 'left',
+  variant = 'light',
   className,
 }: PhotoSplitProps) {
+  const deep = variant === 'deep'
+
   const imageBlock = (
-    <div className="relative min-h-[320px] overflow-hidden rounded-2xl lg:min-h-[480px]">
+    <div
+      className={cn(
+        'relative min-h-[320px] overflow-hidden rounded-2xl lg:min-h-[480px]',
+        deep && 'deep-card'
+      )}
+    >
       <Image
         src={imageSrc}
         alt={imageAlt}
@@ -38,19 +47,56 @@ export function PhotoSplit({
   const contentBlock = (
     <div className="flex flex-col justify-center py-4 lg:py-8">
       {eyebrow && (
-        <p className="mb-3 text-sm font-medium uppercase tracking-widest text-sage">{eyebrow}</p>
+        <p
+          className={cn(
+            'mb-3 text-sm font-medium',
+            deep ? 'text-current-bright' : 'text-sage'
+          )}
+        >
+          {eyebrow}
+        </p>
       )}
-      <h2 className="font-display text-3xl font-semibold tracking-tight text-foreground md:text-4xl text-balance">
+      <h2
+        className={cn(
+          'font-display text-3xl font-semibold tracking-tight md:text-4xl text-balance',
+          deep ? 'text-on-deep' : 'text-foreground'
+        )}
+      >
         {title}
       </h2>
-      <blockquote className="mt-6 border-l-2 border-coral pl-4 font-display text-xl italic leading-snug text-foreground">
-        &ldquo;{quote}&rdquo;
+      <blockquote className="relative mt-8 pl-9">
+        <span
+          className={cn(
+            'absolute -top-3 left-0 font-display text-6xl leading-none',
+            deep ? 'text-ember' : 'text-coral'
+          )}
+          aria-hidden
+        >
+          &ldquo;
+        </span>
+        <p
+          className={cn(
+            'font-display text-xl font-medium leading-snug',
+            deep ? 'text-on-deep' : 'text-foreground'
+          )}
+        >
+          {quote}&rdquo;
+        </p>
       </blockquote>
       <ul className="mt-8 space-y-5">
         {items.map((item) => (
           <li key={item.title}>
-            <h3 className="font-semibold text-foreground">{item.title}</h3>
-            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{item.description}</p>
+            <h3 className={cn('font-semibold', deep ? 'text-on-deep' : 'text-foreground')}>
+              {item.title}
+            </h3>
+            <p
+              className={cn(
+                'mt-1 text-sm leading-relaxed',
+                deep ? 'text-on-deep-muted' : 'text-muted-foreground'
+              )}
+            >
+              {item.description}
+            </p>
           </li>
         ))}
       </ul>
