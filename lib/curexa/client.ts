@@ -171,6 +171,12 @@ function toCurexaPayload(data: CurexaCreateOrderInput): Record<string, unknown> 
 
 // ─── Orders ──────────────────────────────────────────────────────────────────
 
+const MEDIA_MIME_WHITELIST = new Set([
+  'image/bmp', 'image/heic', 'image/heif', 'image/jpg', 'image/jpeg',
+  'application/pdf', 'image/png', 'image/tif', 'image/tiff', 'image/webp',
+])
+const MEDIA_MAX_BYTES = 10 * 1024 * 1024
+
 export const curexaOrders = {
   create(data: CurexaCreateOrderInput) {
     return curexaFetch<CurexaOrderResponse>('/orders.php', toCurexaPayload(data))
@@ -183,6 +189,24 @@ export const curexaOrders = {
   cancel(orderId: string) {
     return curexaFetch<{ order_id: string; status: string; msg?: string }>('/cancel_order.php', {
       order_id: orderId,
+    })
+  },
+
+  // POST /order/{orderId}/media — attach intake photos or regulatory PDFs.
+  // Whitelisted formats only; 10MB ceiling per asset; order must already exist
+  // and not be cancelled / out_for_delivery.
+  async attachMedia(orderId: string, file: { mime: string; data: string; filename?: string }) {
+    if (!MEDIA_MIME_WHITELIST.has(file.mime.toLowerCase())) {
+      throw new CurexaError(400, `Unsupported media type: ${file.mime}`, `/order/${orderId}/media`)
+    }
+    const base64 = file.data.replace(/^data:[^;]+;base64,/, '')
+    if (Buffer.byteLength(base64, 'base64') > MEDIA_MAX_BYTES) {
+      throw new CurexaError(400, 'Media exceeds 10MB limit', `/order/${orderId}/media`)
+    }
+    return curexaFetch<Record<string, unknown>>(`/order/${encodeURIComponent(orderId)}/media`, {
+      mime: file.mime,
+      data: base64,
+      filename: file.filename ?? `media-${Date.now()}`,
     })
   },
 }

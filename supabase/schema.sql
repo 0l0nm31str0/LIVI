@@ -53,10 +53,17 @@ CREATE TABLE IF NOT EXISTS visits (
   tracking_url          TEXT,
   carrier               TEXT,
   estimated_delivery    TEXT,
+  -- Lab order tracking (from Beluga LAB_* webhooks)
+  lab_status            TEXT,             -- last LAB_* event received
+  lab_data              JSONB,            -- carrier/tracking/bookingLink/requisition metadata
   -- Timestamps
   created_at            TIMESTAMPTZ DEFAULT now(),
   updated_at            TIMESTAMPTZ DEFAULT now()
 );
+
+-- Idempotent upgrade for pre-existing deployments
+ALTER TABLE visits ADD COLUMN IF NOT EXISTS lab_status TEXT;
+ALTER TABLE visits ADD COLUMN IF NOT EXISTS lab_data   JSONB;
 
 -- ─── Visit Messages ───────────────────────────────────────────────────────────
 -- Unified message thread: patient ↔ doctor (Beluga) + patient ↔ pharmacy (Curexa).

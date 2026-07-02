@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase'
 import { curexaOrders } from '@/lib/curexa/client'
 import { ok, err } from '@/lib/api-response'
+import { compressData } from '@/lib/compression'
 
 // GET /api/orders?patient_id=xxx
 // Returns all visits that have a Curexa order, with fresh status from Curexa.
 export async function GET(req: NextRequest) {
   const patientId = req.nextUrl.searchParams.get('patient_id')
+  const useCompression = req.nextUrl.searchParams.get('compress') === 'true'
   if (!patientId) return NextResponse.json(err('patient_id is required'), { status: 400 })
 
   const db = getServerSupabase()
@@ -42,5 +44,14 @@ export async function GET(req: NextRequest) {
     })
   )
 
-  return NextResponse.json(ok(refreshed))
+  const payload = ok(refreshed)
+  if (useCompression && Buffer.byteLength(JSON.stringify(payload), 'utf-8') > 1000) {
+    const result = await compressData(payload)
+    return NextResponse.json({
+      success: true,
+      data: result.compressed,
+      meta: { compressed: true, compressionRatio: result.metadata.ratio },
+    })
+  }
+  return NextResponse.json(payload)
 }

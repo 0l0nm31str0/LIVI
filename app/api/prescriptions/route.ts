@@ -5,9 +5,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase'
 import { belugaRx, BelugaError } from '@/lib/beluga/client'
 import { ok, err } from '@/lib/api-response'
+import { compressData } from '@/lib/compression'
 
 export async function GET(req: NextRequest) {
   const patientId = req.nextUrl.searchParams.get('patient_id')
+  const useCompression = req.nextUrl.searchParams.get('compress') === 'true'
 
   const db = getServerSupabase()
   let query = db
@@ -19,7 +21,17 @@ export async function GET(req: NextRequest) {
 
   const { data, error } = await query.order('created_at', { ascending: false })
   if (error) return NextResponse.json(err(error.message), { status: 500 })
-  return NextResponse.json(ok(data))
+
+  const payload = ok(data)
+  if (useCompression && Buffer.byteLength(JSON.stringify(payload), 'utf-8') > 1000) {
+    const result = await compressData(payload)
+    return NextResponse.json({
+      success: true,
+      data: result.compressed,
+      meta: { compressed: true, compressionRatio: result.metadata.ratio },
+    })
+  }
+  return NextResponse.json(payload)
 }
 
 export async function POST(req: NextRequest) {

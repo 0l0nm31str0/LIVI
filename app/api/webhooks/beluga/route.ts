@@ -15,7 +15,18 @@ interface BelugaWebhookPayload {
   content?: string
   orderId?: string
   info?: Record<string, unknown>
+  bookingLink?: string
+  labReqPdf?: string
   [key: string]: unknown
+}
+
+const LAB_EVENT_LABELS: Record<string, string> = {
+  LAB_ORDER_REQUISITION_CREATED: 'Your lab requisition has been created.',
+  LAB_ORDER_SHIPPED_TO_PATIENT: 'Your lab kit has shipped.',
+  LAB_ORDER_DELIVERED_TO_PATIENT: 'Your lab kit was delivered.',
+  LAB_ORDER_SHIPPED_TO_LAB: 'Your sample is on its way to the lab.',
+  LAB_ORDER_RECEIVED_BY_LAB: 'The lab has received your sample.',
+  LAB_ORDER_RESULTS: 'Your lab results are ready.',
 }
 
 export async function POST(req: NextRequest) {
@@ -86,6 +97,14 @@ export async function POST(req: NextRequest) {
           status: 'delivered',
           curexa_order_status: 'completed',
         })
+        break
+      case 'LAB_ORDER_REQUISITION_CREATED':
+      case 'LAB_ORDER_SHIPPED_TO_PATIENT':
+      case 'LAB_ORDER_DELIVERED_TO_PATIENT':
+      case 'LAB_ORDER_SHIPPED_TO_LAB':
+      case 'LAB_ORDER_RECEIVED_BY_LAB':
+      case 'LAB_ORDER_RESULTS':
+        await handleLabEvent(db, eventType, payload)
         break
     }
 
@@ -218,6 +237,54 @@ async function handleRxWritten(
     curexa_order_status: curexaStatus,
     updated_at: new Date().toISOString(),
   }).eq('id', visit.id)
+}
+
+async function handleLabEvent(
+  db: ReturnType<typeof import('@/lib/supabase').getServerSupabase>,
+  eventType: string,
+  payload: BelugaWebhookPayload
+) {
+  const visit = await findVisitByMasterId(db, payload.masterId)
+  if (!visit) {
+    console.error(`[${eventType}] Visit not found for masterId:`, payload.masterId)
+    return
+  }
+
+  const labData: Record<string, unknown> = {
+    ...(visit.lab_data as Record<string, unknown> | null ?? {}),
+    orderId: payload.orderId ?? null,
+    lastEvent: eventType,
+    lastEventAt: new Date().toISOString(),
+  }
+  if (payload.info?.carrier) labData.carrier = payload.info.carrier
+  if (payload.info?.tracking) labData.tracking = payload.info.tracking
+  if (payload.bookingLink) labData.bookingLink = payload.bookingLink
+  // The requisition PDF arrives base64-encoded; keep a flag rather than
+  // persisting megabytes of PDF in the row.
+  if (payload.labReqPdf) labData.hasRequisitionPdf = true
+
+  await db.from('visits').update({
+    lab_status: eventType,
+    lab_data: labData,
+    updated_at: new Date().toISOString(),
+  }).eq('id', visit.id)
+
+  const label = LAB_EVENT_LABELS[eventType]
+  if (label) {
+    const extra =
+      payload.info?.tracking
+        ? ` Tracking: ${payload.info.carrier ?? ''} ${payload.info.tracking}`.trimEnd()
+        : payload.bookingLink
+          ? ` Book a follow-up: ${payload.bookingLink}`
+          : ''
+    await db.from('visit_messages').insert({
+      visit_id: visit.id,
+      sender_name: 'LIVI Labs',
+      sender_type: 'system',
+      message: `${label}${extra}`,
+      source: 'beluga',
+    })
+  }
 }
 
 async function handleIncomingMessage(

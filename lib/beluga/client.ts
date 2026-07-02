@@ -151,6 +151,76 @@ export const belugaPatients = {
     const digits = phone.replace(/\D/g, '').slice(-10)
     return belugaFetch<Record<string, unknown>>(`/patient/externalFetch/${digits}`)
   },
+
+  // POST {base}/external/nameUpdate — sync a corrected patient name into Beluga.
+  updateName(input: { masterId: string; firstName: string; lastName: string }) {
+    const path = process.env.BELUGA_NAME_UPDATE_ENDPOINT ?? '/external/nameUpdate'
+    return belugaFetch<Record<string, unknown>>(path, {
+      method: 'POST',
+      body: JSON.stringify({
+        masterId: input.masterId,
+        firstName: input.firstName.trim().slice(0, 100),
+        lastName: input.lastName.trim().slice(0, 100),
+      }),
+    })
+  },
+}
+
+// ─── Media submission (ID photos, PDFs) ──────────────────────────────────────
+// Images: jpeg only, ≤1000px wide / <3MB, base64 WITHOUT the MIME prefix.
+
+export const belugaMedia = {
+  submitImages(visitId: string, images: Array<{ data: string }>) {
+    const path = process.env.BELUGA_IMAGES_ENDPOINT ?? '/visit/receiveImages'
+    return belugaFetch<Record<string, unknown>>(path, {
+      method: 'POST',
+      body: JSON.stringify({
+        visitId,
+        images: images.map((img) => ({
+          mime: 'image/jpeg',
+          data: img.data.replace(/^data:image\/\w+;base64,/, ''),
+        })),
+      }),
+    })
+  },
+
+  submitPdf(visitId: string, base64Pdf: string) {
+    const path = process.env.BELUGA_PDF_ENDPOINT ?? '/visit/receivePdf'
+    return belugaFetch<Record<string, unknown>>(path, {
+      method: 'POST',
+      body: JSON.stringify({
+        visitId,
+        image: {
+          mime: 'application/pdf',
+          data: base64Pdf.replace(/^data:application\/pdf;base64,/, ''),
+        },
+      }),
+    })
+  },
+}
+
+// ─── Retail pharmacy search ──────────────────────────────────────────────────
+// Zip is the minimum viable criterion per the Beluga docs; returns ≤100 matches.
+
+export interface BelugaPharmacySearch {
+  name: string
+  city?: string
+  state?: string
+  zip?: string
+}
+
+export const belugaPharmacies = {
+  search(criteria: BelugaPharmacySearch) {
+    const path = process.env.BELUGA_PHARMACY_SEARCH_ENDPOINT ?? '/external/pharmacySearch'
+    const body: Record<string, string> = { name: criteria.name }
+    if (criteria.city) body.city = criteria.city
+    if (criteria.state) body.state = criteria.state.toUpperCase().slice(0, 2)
+    if (criteria.zip) body.zip = criteria.zip.replace(/\D/g, '').slice(0, 5)
+    return belugaFetch<{ status: number; data: Array<Record<string, unknown>> }>(path, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
 }
 
 // ─── Prescription update / resend ────────────────────────────────────────────
@@ -177,6 +247,24 @@ export const belugaRx = {
         pharmacyId: input.pharmacyId ?? process.env.BELUGA_PHARMACY_ID ?? '',
         masterId: input.masterId,
         apiKey: getKey(),
+      }),
+    })
+  },
+
+  // POST {base}/external/autoTitrate — next titration Rx for the autoRx program.
+  // Exactly ONE patientPreference item is allowed per the docs.
+  autoTitrate(input: {
+    masterId: string
+    preference: { name: string; strength: string; refills: string; quantity: string; medId: string }
+    pharmacyId?: string
+  }) {
+    const path = process.env.BELUGA_AUTO_TITRATE_ENDPOINT ?? '/external/autoTitrate'
+    return belugaFetch<Record<string, unknown>>(path, {
+      method: 'POST',
+      body: JSON.stringify({
+        patientPreference: [input.preference],
+        pharmacyId: input.pharmacyId ?? process.env.BELUGA_PHARMACY_ID ?? '',
+        masterId: input.masterId,
       }),
     })
   },
