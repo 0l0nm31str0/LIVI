@@ -34,6 +34,11 @@ export function formatCurrency(amount: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount)
 }
 
+// Format cents to "$X.XX"
+export function formatPrice(cents: number): string {
+  return `$${(cents / 100).toFixed(2)}`
+}
+
 export function maskName(firstName: string, lastName: string) {
   return `${firstName} ${lastName.charAt(0)}.`
 }

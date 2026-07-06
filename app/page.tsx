@@ -6,23 +6,21 @@ import { JourneyFlow } from '@/components/marketing/JourneyFlow'
 import { CareMenu } from '@/components/marketing/CareMenu'
 import { PhotoSplit } from '@/components/marketing/PhotoSplit'
 import { SmoothScroll } from '@/components/motion/SmoothScroll'
-import { FluidCurrent } from '@/components/three/FluidCurrent'
-import { Button } from '@/components/ui/button'
+import { TrustMarquee } from '@/components/shop/TrustMarquee'
 
 export default function LandingPage() {
   return (
     <SmoothScroll>
       <div className="relative min-h-screen bg-deep">
-        {/* The current — one WebGL layer behind the whole page.
-            Scroll velocity stirs it; page depth brightens it. */}
-        <div className="fixed inset-0" aria-hidden>
-          <FluidCurrent className="absolute inset-0" intensity={1} />
-        </div>
-
         <div className="relative z-10">
           <SiteNav />
 
           <DeepHero />
+
+          {/* Trust marquee */}
+          <div className="relative z-10">
+            <TrustMarquee />
+          </div>
 
           <section id="how-it-works" className="py-24 md:py-36">
             <JourneyFlow />
@@ -33,45 +31,48 @@ export default function LandingPage() {
               <PhotoSplit
                 variant="deep"
                 imageSrc="/images/marketing/care-lifestyle.webp"
-                imageAlt="Person receiving care at home"
+                imageAlt="LIVI longevity products"
                 eyebrow="Why LIVI"
-                title="Care designed around your life."
-                quote="I got a prescription and delivery update in the same app — no calling three different places."
+                title="Care designed for your longevity."
+                quote="I got my prescription reviewed and shipped without ever leaving the app."
                 items={[
                   {
-                    title: 'Care on your schedule',
+                    title: 'Product-first, not clinic-first',
                     description:
-                      'Book consultations when it works for you — evenings, weekends, from anywhere.',
+                      'Browse treatments, choose your plan, and let our physicians review — no appointments needed.',
                   },
                   {
                     title: 'One connected journey',
-                    description: 'Visit, prescription, and delivery live in a single place.',
+                    description: 'Intake, approval, payment, and delivery — all in one place.',
                   },
                   {
-                    title: 'Built for trust',
-                    description: 'HIPAA-compliant infrastructure with board-certified physicians.',
+                    title: 'Compounded for you',
+                    description: 'Medications from 503A-accredited pharmacies, reviewed by licensed physicians.',
                   },
                 ]}
               />
             </div>
           </section>
 
-          <section id="services" className="py-24 md:py-32">
+          <section id="treatments" className="py-24 md:py-32">
             <CareMenu />
           </section>
 
-          {/* CTA rides the brightest water — the shader peaks at scroll end */}
+          {/* Final CTA */}
           <section className="px-6 py-32 text-center md:py-44">
-            <h2 className="mx-auto max-w-2xl font-display text-4xl font-semibold tracking-tight text-on-deep md:text-6xl">
-              Ready when you are.
+            <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-orange-400">
+              The Longevity Club
+            </p>
+            <h2 className="mx-auto max-w-2xl font-display text-4xl font-bold tracking-tight text-on-deep md:text-6xl">
+              Own your longevity.
             </h2>
             <p className="mx-auto mt-5 max-w-md text-lg text-on-deep-muted">
-              Create an account and start your first visit in minutes.
+              Prescription treatments and OTC wellness, delivered monthly.
             </p>
-            <Link href="/signup" className="mt-10 inline-block">
-              <Button size="lg" className="h-12 px-8 text-base">
-                Start your visit
-              </Button>
+            <Link href="/shop" className="mt-10 inline-block">
+              <button className="h-14 rounded-full bg-orange-500 px-10 text-base font-bold text-white transition-colors hover:bg-orange-600">
+                Shop treatments →
+              </button>
             </Link>
           </section>
 

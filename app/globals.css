@@ -38,6 +38,11 @@
     --on-deep: #EAF4F0;
     --on-deep-muted: #9FB5AD;
 
+    /* Marketplace / KYŌ-inspired accent */
+    --livi-orange: #E85A2B;
+    --club-cream: #F6F3EE;
+    --font-serif: var(--font-serif, 'Georgia', serif);
+
     /* Semantic z-scale */
     --z-nav: 40;
     --z-modal-backdrop: 50;
@@ -193,3 +198,20 @@
   from { transform: scale(1) translate(0, 0); }
   to { transform: scale(1.08) translate(-1%, -1%); }
 }
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 28s linear infinite;
+}
+
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.text-livi-orange { color: var(--livi-orange); }
+.bg-livi-orange { background-color: var(--livi-orange); }
+.bg-club-cream { background-color: var(--club-cream); }

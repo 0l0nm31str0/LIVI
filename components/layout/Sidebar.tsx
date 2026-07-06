@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   LayoutDashboard, Calendar, FileText, ShoppingBag,
-  User, ClipboardList, Package, LogOut, Users, Menu,
+  User, ClipboardList, Package, LogOut, Menu, CreditCard,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuthStore } from '@/stores/auth-store'
@@ -16,10 +16,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 const patientNav = [
   { href: '/patient/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/patient/doctors', label: 'Find Doctors', icon: Users },
-  { href: '/patient/appointments/new', label: 'Book Visit', icon: Calendar },
-  { href: '/patient/prescriptions', label: 'Prescriptions', icon: FileText },
-  { href: '/patient/orders', label: 'My Orders', icon: ShoppingBag },
+  { href: '/shop', label: 'Shop', icon: ShoppingBag },
+  { href: '/patient/orders', label: 'My Orders', icon: Package },
+  { href: '/patient/billing', label: 'Billing', icon: CreditCard },
   { href: '/patient/profile', label: 'Profile', icon: User },
 ]
 
@@ -46,7 +45,7 @@ function BrandMark() {
     <Link href="/" className="flex items-center gap-2 font-display text-xl font-semibold tracking-tight text-on-ink">
       <span
         className="h-2.5 w-2.5 rounded-full"
-        style={{ background: 'linear-gradient(135deg, var(--current-bright), var(--current))' }}
+        style={{ background: 'linear-gradient(135deg, #E85A2B, #ff9070)' }}
         aria-hidden
       />
       LIVI

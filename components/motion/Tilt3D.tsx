@@ -23,8 +23,8 @@ export function Tilt3D({ children, className, max = 7, perspective = 900 }: Tilt
 
   const mx = useMotionValue(0.5)
   const my = useMotionValue(0.5)
-  const sx = useSpring(mx, { stiffness: 160, damping: 20, mass: 0.6 })
-  const sy = useSpring(my, { stiffness: 160, damping: 20, mass: 0.6 })
+  const sx = useSpring(mx, { stiffness: 120, damping: 28, mass: 0.6 })
+  const sy = useSpring(my, { stiffness: 120, damping: 28, mass: 0.6 })
 
   const rotateY = useTransform(sx, [0, 1], [-max, max])
   const rotateX = useTransform(sy, [0, 1], [max, -max])

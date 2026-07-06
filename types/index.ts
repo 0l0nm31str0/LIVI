@@ -264,6 +264,56 @@ export interface VisitMessage {
   created_at: string
 }
 
+// ─── Marketplace Types ────────────────────────────────────────────────────────
+
+export type ProductType = 'prescription' | 'otc'
+
+export type MarketplaceOrderStatus =
+  | 'cart'
+  | 'intake_pending'
+  | 'intake_complete'
+  | 'checkout_pending'
+  | 'paid'
+  | 'under_review'
+  | 'approved'
+  | 'denied'
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'cancelled'
+
+export interface ShippingAddress {
+  line1: string
+  line2?: string
+  city: string
+  state: string
+  zip: string
+  country?: string
+}
+
+export interface MarketplaceOrder {
+  id: string
+  patient_id: string | null
+  patient_email: string
+  patient_first_name?: string
+  patient_last_name?: string
+  product_slug: string
+  product_type: ProductType
+  plan_interval: string
+  auto_renew: boolean
+  amount_cents: number
+  status: MarketplaceOrderStatus
+  shipping_address: ShippingAddress
+  beluga_master_id?: string
+  intake_completed_at?: string
+  stripe_checkout_session_id?: string
+  stripe_subscription_id?: string
+  visit_id?: string
+  tracking_number?: string
+  created_at: string
+  updated_at: string
+}
+
 // ─── Visit Status Labels ──────────────────────────────────────────────────────
 
 export const VISIT_STATUS_LABEL: Record<VisitStatus, string> = {

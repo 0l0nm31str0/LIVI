@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Instrument_Sans, Bricolage_Grotesque } from 'next/font/google'
+import { Instrument_Sans, Bricolage_Grotesque, Cormorant_Garamond } from 'next/font/google'
 import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
 
@@ -17,14 +17,22 @@ const bricolage = Bricolage_Grotesque({
   adjustFontFallback: false,
 })
 
+const cormorant = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-serif',
+  display: 'swap',
+  adjustFontFallback: false,
+})
+
 export const metadata: Metadata = {
-  title: 'LIVI — Telemedicine & Pharmacy',
-  description: 'Book doctors, get prescriptions, delivered to your door.',
+  title: 'LIVI — The Longevity Club',
+  description: 'Prescription treatments and wellness products, delivered.',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${instrumentSans.variable} ${bricolage.variable}`}>
+    <html lang="en" className={`${instrumentSans.variable} ${bricolage.variable} ${cormorant.variable}`}>
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         {children}
         <Toaster />

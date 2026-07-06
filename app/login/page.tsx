@@ -15,10 +15,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { AuthBrandPanel } from '@/components/marketing/AuthBrandPanel'
 import type { AuthUser } from '@/types'
 
+// Marketplace MVP: only patient demo shown (doctor/pharmacy hidden)
 const demoUsers = [
-  { label: 'Patient', email: 'marcus@example.com', password: 'password123' },
-  { label: 'Doctor', email: 'dr.patel@example.com', password: 'password123' },
-  { label: 'Pharmacy', email: 'sarah@cvs.com', password: 'password123' },
+  { label: 'Patient (Kesh demo)', email: 'marcus@example.com', password: 'password123' },
 ]
 
 export default function LoginPage() {
@@ -63,8 +62,8 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen">
       <AuthBrandPanel
-        title="Care that fits your life."
-        description="Sign in to manage visits, prescriptions, and deliveries in one place."
+        title="Own your longevity."
+        description="Sign in to manage your treatments, subscriptions, and deliveries."
       />
 
       <div className="flex flex-1 items-center justify-center bg-background px-6 py-12">

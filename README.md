@@ -1,45 +1,116 @@
-# LIVI — Telemedicine & Pharmacy Delivery
+# LIVI — The Longevity Club
 
-One connected journey: intake questionnaire → physician review → digital prescription → home delivery. Next.js 14 (App Router) + Supabase, with clinical workflow via **Beluga Health** and pharmacy fulfillment via **Curexa**.
+**LIVI** is a product-first telehealth marketplace for prescription treatments and OTC wellness products. Licensed US physicians review intake, compounded medications ship from 503A pharmacies, and OTC wellness products ship direct.
 
-## Getting started
+---
+
+## Quick Start
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000
-npm run build      # production build
+npm run dev     # http://localhost:3000
 ```
 
-## Environment variables
+**Demo mode is active by default** (no external keys required). Everything runs on mock data.
 
-| Variable | Purpose |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase project |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server-side DB access (API routes) |
-| `BELUGA_API_URL` | `https://api-staging.belugahealth.com` or production |
-| `BELUGA_API_KEY` | Bearer token for all Beluga calls |
-| `BELUGA_PHARMACY_ID`, `BELUGA_COMPANY`, `BELUGA_VISIT_TYPE` | Visit-creation metadata |
-| `BELUGA_WEBHOOK_SECRET` | HMAC verification for inbound Beluga webhooks |
-| `CUREXA_API_URL`, `CUREXA_USERNAME`, `CUREXA_PASSWORD` | Curexa Basic auth |
-| `CUREXA_WEBHOOK_SECRET` | HMAC verification for inbound Curexa webhooks |
+Demo login: `marcus@example.com` / `password123`
 
-Optional endpoint overrides (defaults in `lib/beluga/client.ts`): `BELUGA_VISIT_ENDPOINT`, `BELUGA_CHAT_ENDPOINT`, `BELUGA_IMAGES_ENDPOINT`, `BELUGA_PDF_ENDPOINT`, `BELUGA_NAME_UPDATE_ENDPOINT`, `BELUGA_PHARMACY_SEARCH_ENDPOINT`, `BELUGA_AUTO_TITRATE_ENDPOINT`.
+---
 
-## Integrations
+## Architecture
 
-- **Beluga Health** (`lib/beluga/`): visit creation (masterId flow), visit/patient fetch, Rx update/resend, auto-titration, patient chat, image/PDF submission, patient name update, retail pharmacy search. Webhooks handled at `app/api/webhooks/beluga` — consult lifecycle, `RX_WRITTEN` (auto-creates the Curexa order), `DOCTOR_CHAT`/`CS_MESSAGE`, `PHARMACY_*`, and all six `LAB_*` events. See the Beluga docs in the repo root.
-- **Curexa** (`lib/curexa/`): order create/update, status polling, cancel, media attach, two-way messaging. Webhooks at `app/api/webhooks/curexa` (status lifecycle + direct messages). See `curexa.md`.
-- **Compression** (`lib/compression.ts`): `?compress=true` on `/api/appointments`, `/api/prescriptions`, `/api/medications`, `/api/orders` per `HEADROOM_INTEGRATION.md`; decode client-side with `hooks/useCompressedFetch`.
+```
+Landing (/)
+  └── Shop (/shop?tab=prescription|otc)
+        └── Product detail (/shop/[type]/[slug])
+              ├── Rx: Intake (/intake/[orderId]) → Checkout (/checkout/prescription/[orderId])
+              └── OTC: Checkout (/checkout/otc/[orderId])
+                        └── Success (/checkout/success)
+                              └── Dashboard (/patient/dashboard)
+```
 
-## Design
+### Demo vs Production
+`lib/config.ts` exports `isDemoMode()`:
+- Returns `true` when `DEMO_MODE=true` or Stripe/Supabase keys are missing
+- All API routes branch on this: mock store (demo) or Supabase + real integrations (production)
 
-The design system is documented in `DESIGN.md`; product strategy in `PRODUCT.md`.
-Marketing surfaces render a scroll-reactive WebGL fluid (`components/three/FluidCurrent.tsx`) — raw WebGL, no three.js — with Lenis smooth scroll and 3D pointer-tilt cards. Portals are quiet, light product UI.
+---
 
-## Portals
+## Key Directories
 
-- `/patient` — dashboard, visit booking, prescriptions, orders, messaging
-- `/doctor` — appointment queue, visit detail, Rx writing
-- `/pharmacy` — prescription queue, order fulfillment, inventory
+| Path | Purpose |
+|------|---------|
+| `lib/config.ts` | `isDemoMode()`, `hasStripe()`, `hasBelugaEmbed()` |
+| `lib/products/catalog.ts` | Single source of truth for all products |
+| `lib/marketplace/` | `mock-orders.ts` (in-memory), `orders.ts` (unified service) |
+| `lib/stripe/` | Client, checkout session, product sync |
+| `lib/beluga/intake.ts` | Embed URL builder + visit creation |
+| `lib/fulfillment/otc.ts` | OTC adapter stub |
+| `app/shop/` | Marketplace UI |
+| `app/intake/` | Rx intake step |
+| `app/checkout/` | Prescription + OTC checkout + success |
+| `app/patient/` | Patient portal (dashboard, orders, billing) |
+| `app/api/marketplace/` | Orders CRUD + demo advance |
+| `app/api/checkout/` | Stripe / mock checkout sessions |
+| `supabase/migrations/` | `002_marketplace.sql` |
 
-Demo accounts are available on `/login`.
+---
+
+## Environment Variables
+
+Copy `.env.example` to `.env.local` and fill in values:
+
+```bash
+# Demo mode (default)
+DEMO_MODE=true
+
+# Stripe (flip when ready)
+# STRIPE_SECRET_KEY=sk_...
+# NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_...
+# STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Beluga intake embed
+# BELUGA_INTAKE_EMBED_URL=https://intake.belugahealth.com/...
+
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=...
+SUPABASE_SERVICE_ROLE_KEY=...
+```
+
+---
+
+## Integration Partners
+
+| Partner | What they own | LIVI's role |
+|---------|--------------|-------------|
+| **Beluga Health** | Clinical intake, physician review, prescriptions | Order orchestration, status display |
+| **Curexa** | Rx fulfillment, shipping | Webhook listener, tracking display |
+| **Stripe** | Payments, subscriptions | Checkout sessions, webhook handler |
+
+---
+
+## Production Activation
+
+1. Add keys to `.env.local` (see above)
+2. Set `DEMO_MODE=false`
+3. Run `supabase/migrations/002_marketplace.sql`
+4. Register webhooks:
+   - Stripe: `{APP_URL}/api/webhooks/stripe`
+   - Beluga: `{APP_URL}/api/webhooks/beluga`
+   - Curexa: `{APP_URL}/api/webhooks/curexa`
+5. Sync catalog to Stripe: `npx ts-node lib/stripe/products.ts`
+
+See `COMPLIANCE.md` for data responsibility and BAA requirements.
+
+---
+
+## Demo Walkthrough (Kesh)
+
+1. `/` — luxury hero, "OWN YOUR LONGEVITY", category chips
+2. `/shop?tab=prescription` — browse Rx treatments with product shots
+3. Select Sermorelin → choose monthly + auto-pay → "Continue to intake"
+4. Complete mock intake → checkout → mock pay
+5. Dashboard shows "Under Review" → click "Simulate" to advance through states
+6. `/shop?tab=otc` — NAD+ → address → checkout → delivered
+7. `/patient/billing` — subscription + transaction history (mock)
+8. Show commented Stripe/Beluga code + `.env.example` activation checklist

@@ -34,3 +34,12 @@ export function getServerSupabase(): SupabaseClient {
   }
   return serverClient
 }
+
+// Returns null in demo mode instead of throwing — safe for use in API routes
+export function getServerSupabaseOptional(): SupabaseClient | null {
+  try {
+    return getServerSupabase()
+  } catch {
+    return null
+  }
+}

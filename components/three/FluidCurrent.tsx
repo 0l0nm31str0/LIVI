@@ -50,7 +50,7 @@ float fbm(vec2 p) {
   float v = 0.0;
   float a = 0.5;
   mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 3; i++) {
     v += a * noise(p);
     p = rot * p * 2.02;
     a *= 0.5;
@@ -63,43 +63,38 @@ void main() {
   vec2 p = uv;
   p.x *= u_res.x / u_res.y;
 
-  float t = u_time * (0.045 + u_energy * 0.35);
+  float t = u_time * (0.022 + u_energy * 0.10);
 
   // Two-pass domain warp = the fluid
-  vec2 drift = vec2(t * 0.32, -t * 0.18 - u_scroll * 1.4);
+  vec2 drift = vec2(t * 0.32, -t * 0.18 - u_scroll * 0.55);
   vec2 q = vec2(
-    fbm(p * 1.15 + drift),
-    fbm(p * 1.15 + vec2(5.2, 1.3) - drift * 0.7)
+    fbm(p * 0.85 + drift),
+    fbm(p * 0.85 + vec2(5.2, 1.3) - drift * 0.7)
   );
-  float warp = 2.1 + u_energy * 1.6;
+  float warp = 1.15 + u_energy * 0.35;
   vec2 r = vec2(
-    fbm(p * 1.15 + warp * q + vec2(1.7, 9.2) + 0.15 * t),
-    fbm(p * 1.15 + warp * q + vec2(8.3, 2.8) - 0.13 * t)
+    fbm(p * 0.85 + warp * q + vec2(1.7, 9.2) + 0.15 * t),
+    fbm(p * 0.85 + warp * q + vec2(8.3, 2.8) - 0.13 * t)
   );
-  float f = fbm(p * 1.15 + warp * r);
+  float f = fbm(p * 0.85 + warp * r);
 
-  // Palette — abyss → teal current → bioluminescent crest
+  // Palette — abyss → teal current → soft crest
   vec3 abyss   = vec3(0.016, 0.055, 0.050);
   vec3 current = vec3(0.075, 0.360, 0.300);
-  vec3 crest   = vec3(0.375, 0.830, 0.700);
-  vec3 ember   = vec3(0.910, 0.395, 0.310);
+  vec3 crest   = vec3(0.18, 0.52, 0.44);
 
-  float currentAmt = smoothstep(0.28, 0.78, f) * (0.55 + 0.45 * u_scroll);
+  float currentAmt = smoothstep(0.28, 0.78, f) * (0.72 + 0.18 * u_scroll);
   float crestAmt   = smoothstep(0.62, 0.95, f * (0.75 + q.y * 0.5));
 
   vec3 col = abyss;
   col = mix(col, current, currentAmt * u_intensity);
-  col = mix(col, crest, crestAmt * (0.30 + 0.45 * u_scroll) * u_intensity);
-
-  // Sparse coral embers riding the warp
-  float emberAmt = smoothstep(0.72, 0.98, r.x * q.x * 1.55);
-  col = mix(col, ember, emberAmt * 0.22 * u_intensity);
+  col = mix(col, crest, crestAmt * 0.35 * u_intensity);
 
   // Pointer glow — a soft light dragged through the water
   vec2 pp = u_pointer;
   pp.x *= u_res.x / u_res.y;
   float d = length(p - pp);
-  col += crest * exp(-d * d * 5.5) * 0.12 * u_intensity;
+  col += crest * exp(-d * d * 2.8) * 0.06 * u_intensity;
 
   // Depth: darker at top of page, breathing room behind hero copy
   col *= 0.72 + 0.28 * uv.y * uv.y + u_energy * 0.05;
@@ -213,7 +208,7 @@ export function FluidCurrent({ className, intensity = 1 }: FluidCurrentProps) {
       lastScrollY = window.scrollY
       lastScrollT = now
       const vel = Math.abs(dy / dt) // px per ms
-      energyTarget = Math.min(vel / 2.4, 1)
+      energyTarget = Math.min(vel / 5.0, 1)
       const doc = document.documentElement
       const max = Math.max(doc.scrollHeight - window.innerHeight, 1)
       scrollTarget = Math.min(window.scrollY / max, 1)
@@ -232,11 +227,11 @@ export function FluidCurrent({ className, intensity = 1 }: FluidCurrentProps) {
     function draw(now: number) {
       resize()
       const t = (now - t0) / 1000
-      scroll += (scrollTarget - scroll) * 0.06
-      energy += (energyTarget - energy) * (energyTarget > energy ? 0.16 : 0.03)
-      energyTarget *= 0.94 // decay so the water settles after scrolling stops
-      px += (pxTarget - px) * 0.05
-      py += (pyTarget - py) * 0.05
+      scroll += (scrollTarget - scroll) * 0.04
+      energy += (energyTarget - energy) * (energyTarget > energy ? 0.08 : 0.02)
+      energyTarget *= 0.90 // decay so the water settles after scrolling stops
+      px += (pxTarget - px) * 0.03
+      py += (pyTarget - py) * 0.03
 
       gl!.uniform2f(uRes, canvas!.width, canvas!.height)
       gl!.uniform1f(uTime, t)
@@ -330,7 +325,7 @@ export function FluidCurrent({ className, intensity = 1 }: FluidCurrentProps) {
     <canvas
       ref={canvasRef}
       aria-hidden
-      className={cn('pointer-events-none h-full w-full', className)}
+      className={cn('pointer-events-none h-full w-full scale-105 blur-[6px]', className)}
     />
   )
 }

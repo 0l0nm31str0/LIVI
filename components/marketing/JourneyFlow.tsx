@@ -1,13 +1,8 @@
 'use client'
 
-// The four-step care journey as a scroll-linked timeline.
-// A "current line" grows down the rail as you scroll; each step surfaces
-// as it enters the viewport. This is a genuine sequence, so the numbers
-// carry information — intake happens before review, review before Rx.
-
 import { useRef } from 'react'
 import { motion, useScroll, useSpring, useTransform } from 'motion/react'
-import { Stethoscope, Calendar, FileText, Package, type LucideIcon } from 'lucide-react'
+import { ShoppingBag, ClipboardList, CreditCard, CheckCircle2, Package, type LucideIcon } from 'lucide-react'
 import { useReducedMotion } from '@/hooks/use-reduced-motion'
 
 interface JourneyStep {
@@ -19,32 +14,39 @@ interface JourneyStep {
 
 const steps: JourneyStep[] = [
   {
-    icon: Stethoscope,
-    title: 'Tell us how you feel',
+    icon: ShoppingBag,
+    title: 'Choose your treatment',
     description:
-      'A short clinical questionnaire, built for your treatment area. No waiting rooms, no phone trees.',
-    detail: 'Takes about 5 minutes',
+      'Browse prescription and OTC products. Select a subscription plan that works for you.',
+    detail: 'No appointment needed',
   },
   {
-    icon: Calendar,
-    title: 'A physician reviews your case',
+    icon: ClipboardList,
+    title: 'Complete your intake',
     description:
-      'A licensed doctor evaluates your intake and consults by video or secure messaging.',
+      'A short, HIPAA-compliant medical questionnaire reviewed by a board-certified physician.',
+    detail: 'Takes under 5 minutes',
+  },
+  {
+    icon: CreditCard,
+    title: 'Checkout securely',
+    description:
+      'Pay only after physician approval. Subscriptions auto-renew and can be cancelled anytime.',
+    detail: 'Stripe-secured payments',
+  },
+  {
+    icon: CheckCircle2,
+    title: 'Physician review',
+    description:
+      'A licensed doctor evaluates your intake and approves your prescription within 24 hours.',
     detail: 'Usually within hours',
-  },
-  {
-    icon: FileText,
-    title: 'Your prescription is issued',
-    description:
-      'If treatment is appropriate, your Rx is written digitally and routed straight to the pharmacy.',
-    detail: 'No paper, no pickup line',
   },
   {
     icon: Package,
     title: 'Delivered to your door',
     description:
-      'Track fulfillment and shipping in your portal — from the pharmacy shelf to your doorstep.',
-    detail: 'Discreet packaging, tracked',
+      'Your treatment ships from a 503A-accredited pharmacy in discreet packaging, tracked end-to-end.',
+    detail: 'Discreet, tracked delivery',
   },
 ]
 
@@ -64,22 +66,21 @@ export function JourneyFlow() {
       <div className="grid gap-14 lg:grid-cols-[0.85fr_1.15fr]">
         <div className="lg:sticky lg:top-28 lg:self-start">
           <h2 className="font-display text-4xl font-semibold tracking-tight text-on-deep md:text-5xl">
-            From symptom to doorstep.
+            From browse to doorstep.
           </h2>
           <p className="mt-5 max-w-sm text-lg leading-relaxed text-on-deep-muted">
-            One flow carries your visit, your prescription, and your delivery.
-            You never have to chase a status again.
+            Select a treatment, complete intake, pay after approval — and your
+            prescription arrives at your door.
           </p>
         </div>
 
         <div ref={railRef} className="relative">
-          {/* Rail + scroll-grown current */}
           <div className="absolute bottom-6 left-[1.4rem] top-6 w-px bg-white/10" aria-hidden />
           <motion.div
             className="absolute bottom-6 left-[1.4rem] top-6 w-px origin-top"
             style={{
               scaleY: reduced ? 1 : lineScale,
-              background: 'linear-gradient(to bottom, var(--current-bright), var(--current))',
+              background: 'linear-gradient(to bottom, #F97316, #EA580C)',
             }}
             aria-hidden
           />
@@ -94,11 +95,14 @@ export function JourneyFlow() {
                 viewport={{ once: true, margin: '0px 0px -12% 0px' }}
                 transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
               >
-                <div className="deep-card absolute left-0 top-0 flex h-11 w-11 items-center justify-center rounded-xl">
-                  <step.icon className="h-5 w-5 text-current-bright" strokeWidth={1.75} />
+                <div
+                  className="absolute left-0 top-0 flex h-11 w-11 items-center justify-center rounded-xl"
+                  style={{ background: 'rgba(249,115,22,0.15)', border: '1px solid rgba(249,115,22,0.3)' }}
+                >
+                  <step.icon className="h-5 w-5 text-orange-400" strokeWidth={1.75} />
                 </div>
                 <div className="flex flex-wrap items-baseline gap-x-3">
-                  <span className="font-display text-sm font-semibold text-current-bright">
+                  <span className="font-display text-sm font-semibold text-orange-400">
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   <h3 className="font-display text-2xl font-semibold tracking-tight text-on-deep">
@@ -108,7 +112,7 @@ export function JourneyFlow() {
                 <p className="mt-3 max-w-md leading-relaxed text-on-deep-muted">
                   {step.description}
                 </p>
-                <p className="mt-2 text-sm font-medium text-ember">{step.detail}</p>
+                <p className="mt-2 text-sm font-medium text-orange-400">{step.detail}</p>
               </motion.li>
             ))}
           </ol>

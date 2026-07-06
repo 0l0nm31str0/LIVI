@@ -122,3 +122,31 @@ ALTER TABLE visits          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE visit_messages  ENABLE ROW LEVEL SECURITY;
 ALTER TABLE patient_profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE webhook_events  ENABLE ROW LEVEL SECURITY;
+
+-- ─── Marketplace Orders (from migration 002) ───────────────────────────────
+CREATE TABLE IF NOT EXISTS marketplace_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  patient_id TEXT,
+  patient_email TEXT NOT NULL,
+  patient_first_name TEXT,
+  patient_last_name TEXT,
+  product_slug TEXT NOT NULL,
+  product_type TEXT NOT NULL CHECK (product_type IN ('prescription', 'otc')),
+  plan_interval TEXT NOT NULL DEFAULT 'month',
+  auto_renew BOOLEAN DEFAULT true,
+  amount_cents INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'cart',
+  shipping_address JSONB DEFAULT '{}',
+  beluga_master_id TEXT,
+  intake_completed_at TIMESTAMPTZ,
+  stripe_checkout_session_id TEXT,
+  stripe_subscription_id TEXT,
+  visit_id UUID REFERENCES visits(id) ON DELETE SET NULL,
+  tracking_number TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS marketplace_orders_patient_idx ON marketplace_orders(patient_id);
+CREATE INDEX IF NOT EXISTS marketplace_orders_beluga_master_idx ON marketplace_orders(beluga_master_id);
+ALTER TABLE marketplace_orders ENABLE ROW LEVEL SECURITY;

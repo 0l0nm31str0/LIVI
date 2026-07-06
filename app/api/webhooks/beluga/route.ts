@@ -5,6 +5,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/supabase'
 import { verifyBelugaWebhook } from '@/lib/beluga/client'
 import { curexaOrders, CurexaCreateOrderInput } from '@/lib/curexa/client'
+import { isDemoMode } from '@/lib/config'
+import { updateMarketplaceOrderByBelugaMasterId } from '@/lib/marketplace/orders'
 
 interface BelugaWebhookPayload {
   masterId?: string
@@ -53,7 +55,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Missing event field' }, { status: 400 })
   }
 
+  if (isDemoMode()) {
+    // In demo mode: only process marketplace order updates, skip Supabase
+    return NextResponse.json({ received: true, demo: true })
+  }
+
   const db = getServerSupabase()
+
   const { data: logRow } = await db
     .from('webhook_events')
     .insert({ source: 'beluga', event_type: eventType, payload })
@@ -66,14 +74,28 @@ export async function POST(req: NextRequest) {
     switch (eventType) {
       case 'RX_WRITTEN':
         await handleRxWritten(db, payload)
+        // Also update marketplace order if linked
+        if (payload.masterId) {
+          await updateMarketplaceOrderByBelugaMasterId(payload.masterId, {
+            status: 'approved',
+          })
+        }
         break
       case 'CONSULT_CONCLUDED':
         await updateVisitByMasterId(db, payload.masterId, {
           status: payload.visitOutcome === 'prescribed' ? 'prescribed' : 'active',
         })
+        if (payload.masterId && payload.visitOutcome === 'prescribed') {
+          await updateMarketplaceOrderByBelugaMasterId(payload.masterId, { status: 'approved' })
+        } else if (payload.masterId) {
+          await updateMarketplaceOrderByBelugaMasterId(payload.masterId, { status: 'under_review' })
+        }
         break
       case 'CONSULT_CANCELED':
         await updateVisitByMasterId(db, payload.masterId, { status: 'cancelled' })
+        if (payload.masterId) {
+          await updateMarketplaceOrderByBelugaMasterId(payload.masterId, { status: 'denied' })
+        }
         break
       case 'DOCTOR_CHAT':
         await handleIncomingMessage(db, payload, 'doctor')
@@ -91,12 +113,21 @@ export async function POST(req: NextRequest) {
           tracking_number: payload.info?.tracking as string | undefined ?? null,
           carrier: payload.info?.carrier as string | undefined ?? null,
         })
+        if (payload.masterId) {
+          await updateMarketplaceOrderByBelugaMasterId(payload.masterId, {
+            status: 'shipped',
+            tracking_number: payload.info?.tracking as string | undefined,
+          })
+        }
         break
       case 'PHARMACY_ORDER_DELIVERED':
         await updateVisitByMasterId(db, payload.masterId, {
           status: 'delivered',
           curexa_order_status: 'completed',
         })
+        if (payload.masterId) {
+          await updateMarketplaceOrderByBelugaMasterId(payload.masterId, { status: 'delivered' })
+        }
         break
       case 'LAB_ORDER_REQUISITION_CREATED':
       case 'LAB_ORDER_SHIPPED_TO_PATIENT':
